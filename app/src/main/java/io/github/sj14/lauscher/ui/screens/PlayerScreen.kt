@@ -163,6 +163,7 @@ fun PlayerScreen(onClose: () -> Unit, onShowEpisode: (Long) -> Unit) {
                         .fillMaxWidth(0.85f)
                         .shadow(24.dp, RoundedCornerShape(24.dp)),
                     cornerRadius = 24.dp,
+                    fallbackUrl = item?.podcast?.imageUrl,
                 )
             }
             Spacer(Modifier.weight(0.5f))

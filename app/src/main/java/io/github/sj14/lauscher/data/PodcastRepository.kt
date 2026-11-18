@@ -1,6 +1,8 @@
 package io.github.sj14.lauscher.data
 
+import android.util.Log
 import androidx.room.withTransaction
+import io.github.sj14.lauscher.LOG_TAG
 import io.github.sj14.lauscher.data.db.AppDatabase
 import io.github.sj14.lauscher.data.db.Chapter
 import io.github.sj14.lauscher.data.db.Episode
@@ -12,6 +14,7 @@ import io.github.sj14.lauscher.data.feed.ParsedFeed
 import io.github.sj14.lauscher.data.opml.Opml
 import io.github.sj14.lauscher.data.opml.OpmlEntry
 import io.github.sj14.lauscher.download.Downloads
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -91,7 +94,10 @@ class PodcastRepository(
                 if (current.autoDownload) {
                     newEpisodes.forEach { downloads.enqueue(it.id, current.wifiOnly) }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                Log.w(LOG_TAG, "Refreshing ${podcast.feedUrl} failed", e)
                 failures++
             }
         }
@@ -104,8 +110,11 @@ class PodcastRepository(
         try {
             val json = http.newCall(Request.Builder().url(url).build()).execute().use { it.body.string() }
             chapterDao.insertAll(ChaptersJson.parse(json).map { Chapter(episode.id, it.startMs, it.title) })
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // Chapters are optional; the episode plays fine without them.
+            Log.w(LOG_TAG, "Loading chapters from $url failed", e)
         }
     }
 
@@ -136,18 +145,25 @@ class PodcastRepository(
 
     suspend fun markAllPlayed(podcastId: Long) = episodeDao.markAllPlayed(podcastId)
 
-    suspend fun importOpml(input: InputStream): Int = withContext(Dispatchers.IO) {
+    data class ImportResult(val imported: Int, val failed: Int)
+
+    suspend fun importOpml(input: InputStream): ImportResult = withContext(Dispatchers.IO) {
         var imported = 0
+        var failed = 0
         for (entry in Opml.read(input)) {
             try {
                 val id = preview(entry.feedUrl)
                 subscribe(id)
                 imported++
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 // Skip feeds that are gone; import the rest.
+                Log.w(LOG_TAG, "Importing ${entry.feedUrl} failed", e)
+                failed++
             }
         }
-        imported
+        ImportResult(imported, failed)
     }
 
     suspend fun exportOpml(output: OutputStream) = withContext(Dispatchers.IO) {

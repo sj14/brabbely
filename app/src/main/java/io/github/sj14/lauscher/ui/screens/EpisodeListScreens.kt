@@ -98,7 +98,7 @@ fun QueueScreen(onOpenEpisode: (Long) -> Unit) {
                     EpisodeRow(
                         episode = item.episode,
                         podcastTitle = item.podcast.title,
-                        imageUrl = item.imageUrl,
+                        podcastImageUrl = item.podcast.imageUrl,
                         onClick = { onOpenEpisode(item.episode.id) },
                         modifier = Modifier.weight(1f),
                     )
@@ -149,7 +149,7 @@ private fun EpisodeList(list: List<EpisodeWithPodcast>, onOpenEpisode: (Long) ->
             EpisodeRow(
                 episode = item.episode,
                 podcastTitle = item.podcast.title,
-                imageUrl = item.imageUrl,
+                podcastImageUrl = item.podcast.imageUrl,
                 onClick = { onOpenEpisode(item.episode.id) },
                 modifier = Modifier.animateItem(),
             )

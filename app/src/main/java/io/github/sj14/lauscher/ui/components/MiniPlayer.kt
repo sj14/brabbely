@@ -57,7 +57,12 @@ fun MiniPlayer(onOpen: () -> Unit, modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Artwork(current.imageUrl, Modifier.size(44.dp), cornerRadius = 8.dp)
+                Artwork(
+                    current.imageUrl,
+                    Modifier.size(44.dp),
+                    cornerRadius = 8.dp,
+                    fallbackUrl = current.podcast.imageUrl,
+                )
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(

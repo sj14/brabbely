@@ -117,7 +117,7 @@ fun PodcastScreen(podcastId: Long, onBack: () -> Unit, onOpenEpisode: (Long) -> 
                 EpisodeRow(
                     episode = episode,
                     onClick = { onOpenEpisode(episode.id) },
-                    showArtwork = episode.imageUrl != null && episode.imageUrl != current.imageUrl,
+                    podcastImageUrl = current.imageUrl,
                     modifier = Modifier.animateItem(),
                 )
                 HorizontalDivider(Modifier.padding(horizontal = 16.dp))

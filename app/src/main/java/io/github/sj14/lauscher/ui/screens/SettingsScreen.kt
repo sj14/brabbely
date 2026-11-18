@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.sj14.lauscher.BuildConfig
+import io.github.sj14.lauscher.LOG_TAG
 import io.github.sj14.lauscher.R
 import io.github.sj14.lauscher.data.ThemeMode
 import io.github.sj14.lauscher.ui.LocalContainer
@@ -61,16 +63,25 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
 
     val exportDone = stringResource(R.string.opml_exported)
     val failed = stringResource(R.string.error_loading)
+    val importRunning = stringResource(R.string.opml_import_running)
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@rememberLauncherForActivityResult
-        scope.launch {
+        val appContext = context.applicationContext
+        Toast.makeText(appContext, importRunning, Toast.LENGTH_LONG).show()
+        // Importing many feeds takes a while; the app scope keeps it running when the user leaves the screen.
+        container.appScope.launch {
             val message = try {
-                val count = context.contentResolver.openInputStream(uri)!!.use { container.repository.importOpml(it) }
-                resources.getQuantityString(R.plurals.opml_imported, count, count)
+                val result = appContext.contentResolver.openInputStream(uri)!!.use { container.repository.importOpml(it) }
+                var text = resources.getQuantityString(R.plurals.opml_imported, result.imported, result.imported)
+                if (result.failed > 0) {
+                    text += "\n" + resources.getQuantityString(R.plurals.opml_failed, result.failed, result.failed)
+                }
+                text
             } catch (e: Exception) {
+                Log.w(LOG_TAG, "Reading OPML file failed", e)
                 failed
             }
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            Toast.makeText(appContext, message, Toast.LENGTH_LONG).show()
         }
     }
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/x-opml")) { uri ->
@@ -80,6 +91,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
                 context.contentResolver.openOutputStream(uri)!!.use { container.repository.exportOpml(it) }
                 exportDone
             } catch (e: Exception) {
+                Log.w(LOG_TAG, "Writing OPML file failed", e)
                 failed
             }
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()

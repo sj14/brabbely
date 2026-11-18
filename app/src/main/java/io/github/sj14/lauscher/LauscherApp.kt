@@ -22,6 +22,9 @@ import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
+/** Tag for all log messages of the app. */
+const val LOG_TAG = "Lauscher"
+
 /** Creates and holds the objects that live as long as the app. */
 class AppContainer(context: Context) {
     val appScope: CoroutineScope = MainScope()

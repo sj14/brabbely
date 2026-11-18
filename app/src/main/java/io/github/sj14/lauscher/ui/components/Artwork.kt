@@ -18,12 +18,16 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 
-/** Square cover art with rounded corners and a placeholder while loading or without image. */
+/**
+ * Square cover art with rounded corners. If [url] is missing or fails to load, [fallbackUrl]
+ * (usually the podcast cover) is shown instead, and a placeholder if that fails too.
+ */
 @Composable
 fun Artwork(
     url: String?,
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 12.dp,
+    fallbackUrl: String? = null,
 ) {
     val shape = RoundedCornerShape(cornerRadius)
     Box(
@@ -33,15 +37,24 @@ fun Artwork(
             .background(MaterialTheme.colorScheme.surfaceContainerHighest),
         contentAlignment = Alignment.Center,
     ) {
-        SubcomposeAsyncImage(
-            model = url,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-            error = { Placeholder() },
-            loading = { Placeholder() },
+        val hasFallback = fallbackUrl != null && fallbackUrl != url
+        CoverImage(
+            url = url ?: fallbackUrl,
+            onError = { if (hasFallback) CoverImage(fallbackUrl, onError = { Placeholder() }) else Placeholder() },
         )
     }
+}
+
+@Composable
+private fun CoverImage(url: String?, onError: @Composable () -> Unit) {
+    SubcomposeAsyncImage(
+        model = url,
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier = Modifier.fillMaxSize(),
+        error = { onError() },
+        loading = { Placeholder() },
+    )
 }
 
 @Composable

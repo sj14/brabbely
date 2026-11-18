@@ -1,5 +1,6 @@
 package io.github.sj14.lauscher.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,11 +37,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.sj14.lauscher.LOG_TAG
 import io.github.sj14.lauscher.R
 import io.github.sj14.lauscher.data.feed.SearchResult
 import io.github.sj14.lauscher.ui.LocalContainer
 import io.github.sj14.lauscher.ui.components.Artwork
 import io.github.sj14.lauscher.ui.components.EmptyState
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -63,7 +66,10 @@ fun SearchScreen(onOpenPodcast: (Long) -> Unit) {
             error = null
             try {
                 onOpenPodcast(container.repository.preview(feedUrl))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                Log.w(LOG_TAG, "Loading $feedUrl failed", e)
                 error = errorText
             }
             loading = false
@@ -82,7 +88,10 @@ fun SearchScreen(onOpenPodcast: (Long) -> Unit) {
             error = null
             try {
                 results = withContext(Dispatchers.IO) { container.search.search(text) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                Log.w(LOG_TAG, "Searching for $text failed", e)
                 error = errorText
             }
             loading = false

@@ -105,6 +105,11 @@
         <item quantity="one">%d podcast imported</item>
         <item quantity="other">%d podcasts imported</item>
     </plurals>
+    <string name="opml_import_running">Importing subscriptions…</string>
+    <plurals name="opml_failed">
+        <item quantity="one">%d feed could not be loaded</item>
+        <item quantity="other">%d feeds could not be loaded</item>
+    </plurals>
     <string name="opml_exported">Subscriptions exported</string>
     <string name="version">Version %s</string>
     <string name="notification_channel_downloads">Downloads</string>

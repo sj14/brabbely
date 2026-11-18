@@ -53,16 +53,16 @@ import io.github.sj14.lauscher.ui.formatDuration
 import kotlinx.coroutines.launch
 
 /**
- * One episode in a list. [podcastTitle] and [imageUrl] are shown in lists that mix podcasts.
+ * One episode in a list. [podcastTitle] is shown in lists that mix podcasts. The podcast cover
+ * stands in for episodes without their own image.
  */
 @Composable
 fun EpisodeRow(
     episode: Episode,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    podcastImageUrl: String?,
     podcastTitle: String? = null,
-    imageUrl: String? = null,
-    showArtwork: Boolean = true,
 ) {
     val container = LocalContainer.current
     val playerState by container.playerConnection.state.collectAsStateWithLifecycle()
@@ -76,10 +76,13 @@ fun EpisodeRow(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (showArtwork) {
-            Artwork(imageUrl ?: episode.imageUrl, Modifier.size(56.dp), cornerRadius = 10.dp)
-            Spacer(Modifier.width(14.dp))
-        }
+        Artwork(
+            episode.imageUrl,
+            Modifier.size(56.dp),
+            cornerRadius = 10.dp,
+            fallbackUrl = podcastImageUrl,
+        )
+        Spacer(Modifier.width(14.dp))
         Column(
             modifier = Modifier
                 .weight(1f)

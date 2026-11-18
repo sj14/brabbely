@@ -67,7 +67,12 @@ fun EpisodeScreen(episodeId: Long, onBack: () -> Unit, onOpenPodcast: (Long) -> 
                 .padding(horizontal = 20.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Artwork(current.imageUrl, Modifier.width(96.dp), cornerRadius = 14.dp)
+                Artwork(
+                    current.imageUrl,
+                    Modifier.width(96.dp),
+                    cornerRadius = 14.dp,
+                    fallbackUrl = current.podcast.imageUrl,
+                )
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
                     Text(

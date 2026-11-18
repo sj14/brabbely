@@ -5,10 +5,12 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
+import io.github.sj14.lauscher.LOG_TAG
 import io.github.sj14.lauscher.LauscherApp
 import io.github.sj14.lauscher.R
 import io.github.sj14.lauscher.data.db.DownloadState
@@ -60,6 +62,7 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
             episodeDao.setDownload(episodeId, DownloadState.DONE, target.length(), target.path)
             Result.success()
         } catch (e: Exception) {
+            Log.w(LOG_TAG, "Downloading ${episode.mediaUrl} failed", e)
             partial.delete()
             if (isStopped) {
                 // Cancelled by the user: Downloads.cancel already reset the state.
