@@ -55,6 +55,8 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
                                 setForeground(foregroundInfo(episode.title, percent))
                             }
                         }
+                        // Make sure the data is on disk before the download counts as done.
+                        output.fd.sync()
                     }
                 }
             }

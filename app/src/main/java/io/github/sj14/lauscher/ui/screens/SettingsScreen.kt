@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -31,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
@@ -133,6 +135,12 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
                 onChange = { update { repo.setSkipSilence(it) } },
             )
             SwitchSetting(
+                title = stringResource(R.string.pause_on_zero_volume),
+                summary = stringResource(R.string.pause_on_zero_volume_summary),
+                checked = settings.pauseOnZeroVolume,
+                onChange = { update { repo.setPauseOnZeroVolume(it) } },
+            )
+            SwitchSetting(
                 title = stringResource(R.string.continue_with_queue),
                 summary = stringResource(R.string.continue_with_queue_summary),
                 checked = settings.continueWithQueue,
@@ -154,6 +162,12 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
                     }
                 },
                 onSelect = { update { repo.setSleepShake(it) } },
+            )
+            SwitchSetting(
+                title = stringResource(R.string.sleep_volume_reset),
+                summary = stringResource(R.string.sleep_volume_reset_summary),
+                checked = settings.sleepVolumeReset,
+                onChange = { update { repo.setSleepVolumeReset(it) } },
             )
             ChoiceSetting(
                 title = stringResource(R.string.sleep_fade),
@@ -293,6 +307,8 @@ private fun <T> ChoiceSetting(
                     ListItem(
                         headlineContent = { Text(label(option)) },
                         leadingContent = { RadioButton(selected = option == selected, onClick = null) },
+                        // The list item would otherwise draw its own background on top of the dialog's.
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.selectable(selected = option == selected) {
                             onSelect(option)
                             open = false

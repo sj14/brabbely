@@ -83,6 +83,10 @@
     <string name="continue_with_queue_summary">Play the next episode of the queue when one ends</string>
     <string name="sleep_shake">Restart by shaking</string>
     <string name="sleep_shake_summary">Shaking the phone restarts the running sleep timer, with a short vibration. The more sensitive, the lighter a shake is enough.</string>
+    <string name="sleep_volume_reset">Restart with volume buttons</string>
+    <string name="sleep_volume_reset_summary">Changing the volume restarts the running sleep timer</string>
+    <string name="pause_on_zero_volume">Pause at volume zero</string>
+    <string name="pause_on_zero_volume_summary">Turning the volume all the way down pauses playback; turning it up again within two minutes resumes it</string>
     <string name="sleep_fade">Fade out</string>
     <string name="sleep_fade_summary">How long the volume is lowered slowly before playback pauses.</string>
     <string name="off">Off</string>

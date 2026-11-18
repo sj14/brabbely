@@ -392,7 +392,8 @@ private fun ChapterSheet(chapters: List<Chapter>, position: Long, onSelect: (Cha
                 colors = if (chapter == current) {
                     ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
                 } else {
-                    ListItemDefaults.colors()
+                    // Transparent, so the sheet's own background shows through.
+                    ListItemDefaults.colors(containerColor = Color.Transparent)
                 },
                 modifier = Modifier.clickable { onSelect(chapter) },
             )
@@ -416,7 +417,7 @@ private fun SheetOption(text: String, selected: Boolean, onClick: () -> Unit) {
         colors = if (selected) {
             ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
         } else {
-            ListItemDefaults.colors()
+            ListItemDefaults.colors(containerColor = Color.Transparent)
         },
         modifier = Modifier.clickable(onClick = onClick),
     )

@@ -81,6 +81,10 @@
     <string name="continue_with_queue_summary">Nach dem Ende einer Episode die nächste aus der Warteschlange abspielen</string>
     <string name="sleep_shake">Neustart durch Schütteln</string>
     <string name="sleep_shake_summary">Schütteln des Handys startet den laufenden Sleep-Timer neu, mit kurzer Vibration. Je empfindlicher, desto leichter darf das Schütteln sein.</string>
+    <string name="sleep_volume_reset">Neustart mit Lautstärketasten</string>
+    <string name="sleep_volume_reset_summary">Ändern der Lautstärke startet den laufenden Sleep-Timer neu</string>
+    <string name="pause_on_zero_volume">Bei Lautstärke null pausieren</string>
+    <string name="pause_on_zero_volume_summary">Ganz leise drehen pausiert die Wiedergabe; wird innerhalb von zwei Minuten wieder lauter gedreht, geht sie weiter</string>
     <string name="sleep_fade">Ausblenden</string>
     <string name="sleep_fade_summary">Wie lange die Lautstärke vor dem Pausieren langsam verringert wird.</string>
     <string name="off">Aus</string>

@@ -33,6 +33,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.io.File
 
 // Media button preferences and the session callbacks are still marked unstable in Media3.
 @OptIn(UnstableApi::class)
@@ -44,6 +45,9 @@ class PlaybackService : MediaSessionService() {
     private lateinit var session: MediaSession
     private var settings = AppSettings()
     private var positionSaver: Job? = null
+
+    /** When playback was paused because the volume reached zero, so turning it up can resume it. */
+    private var pausedByVolumeAt: Long? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -57,6 +61,8 @@ class PlaybackService : MediaSessionService() {
             )
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_NETWORK)
+            // Lets the player report changes of the device volume, see onDeviceVolumeChanged.
+            .setDeviceVolumeControlEnabled(true)
             .build()
         player.addListener(PlayerListener())
 
@@ -119,6 +125,23 @@ class PlaybackService : MediaSessionService() {
             .build(),
     )
 
+    private fun onVolumeChanged(volume: Int, muted: Boolean) {
+        if (settings.sleepVolumeReset) container.sleepTimer.reset()
+        if (!settings.pauseOnZeroVolume) return
+
+        val silent = volume == 0 || muted
+        if (silent && player.isPlaying) {
+            player.pause()
+            pausedByVolumeAt = System.currentTimeMillis()
+            return
+        }
+        val pausedAt = pausedByVolumeAt ?: return
+        if (!silent) {
+            pausedByVolumeAt = null
+            if (System.currentTimeMillis() - pausedAt < RESUME_AFTER_VOLUME_PAUSE_MS) player.play()
+        }
+    }
+
     private fun skipBy(milliseconds: Long) {
         val duration = player.duration.takeIf { it != C.TIME_UNSET } ?: Long.MAX_VALUE
         player.seekTo((player.currentPosition + milliseconds).coerceIn(0, duration))
@@ -154,6 +177,8 @@ class PlaybackService : MediaSessionService() {
 
     private inner class PlayerListener : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
+            // Playback resumed some other way, so a later volume change must not resume it again.
+            if (isPlaying) pausedByVolumeAt = null
             savePosition()
             positionSaver?.cancel()
             if (!isPlaying) return
@@ -164,6 +189,8 @@ class PlaybackService : MediaSessionService() {
                 }
             }
         }
+
+        override fun onDeviceVolumeChanged(volume: Int, muted: Boolean) = onVolumeChanged(volume, muted)
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             val episodeId = mediaItem?.mediaId?.toLongOrNull() ?: return
@@ -258,6 +285,7 @@ class PlaybackService : MediaSessionService() {
         const val COMMAND_SKIP_BACK = "skip_back"
         const val COMMAND_SKIP_FORWARD = "skip_forward"
         private const val POSITION_SAVE_INTERVAL_MS = 10_000L
+        private const val RESUME_AFTER_VOLUME_PAUSE_MS = 2 * 60_000L
 
         private fun skipBackIcon(seconds: Int) = when (seconds) {
             5 -> CommandButton.ICON_SKIP_BACK_5
@@ -278,7 +306,9 @@ class PlaybackService : MediaSessionService() {
 }
 
 fun EpisodeWithPodcast.toMediaItem(): MediaItem {
-    val uri = episode.localPath?.let { "file://$it" } ?: episode.mediaUrl
+    // Stream if the downloaded file is gone or empty, for example after it was cut off.
+    val localFile = episode.localPath?.let(::File)?.takeIf { it.length() > 0 }
+    val uri = localFile?.let { "file://${it.path}" } ?: episode.mediaUrl
     val metadata = MediaMetadata.Builder()
         .setTitle(episode.title)
         .setArtist(podcast.title)

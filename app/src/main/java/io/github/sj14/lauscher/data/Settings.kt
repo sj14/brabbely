@@ -29,12 +29,14 @@ data class AppSettings(
     val playbackSpeed: Float = 1.0f,
     val skipSilence: Boolean = false,
     val continueWithQueue: Boolean = true,
+    val pauseOnZeroVolume: Boolean = true,
     val autoDownload: Boolean = true,
     val wifiOnly: Boolean = true,
     val deletePlayed: Boolean = true,
     val refreshIntervalHours: Int = 6,
     val sleepTimerMinutes: Int = 30,
     val sleepShakeSensitivity: ShakeSensitivity = ShakeSensitivity.MEDIUM,
+    val sleepVolumeReset: Boolean = true,
     /** How long the volume fades out before the sleep timer pauses, 0 for no fade-out. */
     val sleepFadeSeconds: Int = 15,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
@@ -52,6 +54,8 @@ class SettingsRepository(context: Context) {
         val speed = floatPreferencesKey("speed")
         val skipSilence = booleanPreferencesKey("skip_silence")
         val continueWithQueue = booleanPreferencesKey("continue_with_queue")
+        val pauseOnZeroVolume = booleanPreferencesKey("pause_on_zero_volume")
+        val sleepVolumeReset = booleanPreferencesKey("sleep_volume_reset")
         val autoDownload = booleanPreferencesKey("auto_download")
         val wifiOnly = booleanPreferencesKey("wifi_only")
         val deletePlayed = booleanPreferencesKey("delete_played")
@@ -71,6 +75,8 @@ class SettingsRepository(context: Context) {
             playbackSpeed = prefs[Keys.speed] ?: defaults.playbackSpeed,
             skipSilence = prefs[Keys.skipSilence] ?: defaults.skipSilence,
             continueWithQueue = prefs[Keys.continueWithQueue] ?: defaults.continueWithQueue,
+            pauseOnZeroVolume = prefs[Keys.pauseOnZeroVolume] ?: defaults.pauseOnZeroVolume,
+            sleepVolumeReset = prefs[Keys.sleepVolumeReset] ?: defaults.sleepVolumeReset,
             autoDownload = prefs[Keys.autoDownload] ?: defaults.autoDownload,
             wifiOnly = prefs[Keys.wifiOnly] ?: defaults.wifiOnly,
             deletePlayed = prefs[Keys.deletePlayed] ?: defaults.deletePlayed,
@@ -90,6 +96,8 @@ class SettingsRepository(context: Context) {
     suspend fun setSkipForward(seconds: Int) = store.edit { it[Keys.skipForward] = seconds }
     suspend fun setPlaybackSpeed(speed: Float) = store.edit { it[Keys.speed] = speed }
     suspend fun setSkipSilence(enabled: Boolean) = store.edit { it[Keys.skipSilence] = enabled }
+    suspend fun setPauseOnZeroVolume(enabled: Boolean) = store.edit { it[Keys.pauseOnZeroVolume] = enabled }
+    suspend fun setSleepVolumeReset(enabled: Boolean) = store.edit { it[Keys.sleepVolumeReset] = enabled }
     suspend fun setContinueWithQueue(enabled: Boolean) = store.edit { it[Keys.continueWithQueue] = enabled }
     suspend fun setAutoDownload(enabled: Boolean) = store.edit { it[Keys.autoDownload] = enabled }
     suspend fun setWifiOnly(enabled: Boolean) = store.edit { it[Keys.wifiOnly] = enabled }
