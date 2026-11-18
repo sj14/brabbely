@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
@@ -18,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -145,13 +147,17 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
         ) {
             // Registered after the NavHost, so back closes the player instead of leaving the screen below.
             BackHandler { playerOpen = false }
-            PlayerScreen(
-                onClose = { playerOpen = false },
-                onShowEpisode = { id ->
-                    playerOpen = false
-                    navController.navigate(Routes.episode(id))
-                },
-            )
+            // The surface makes the player opaque and sets the theme's text and icon colors,
+            // which the screens below get from the Scaffold.
+            Surface(Modifier.fillMaxSize()) {
+                PlayerScreen(
+                    onClose = { playerOpen = false },
+                    onShowEpisode = { id ->
+                        playerOpen = false
+                        navController.navigate(Routes.episode(id))
+                    },
+                )
+            }
         }
     }
 }

@@ -129,8 +129,6 @@ fun PlayerScreen(onClose: () -> Unit, onShowEpisode: (Long) -> Unit) {
     Box(
         Modifier
             .fillMaxSize()
-            // Opaque first: the player lies on top of the other screens.
-            .background(baseColor)
             .background(Brush.verticalGradient(listOf(accent.copy(alpha = 0.55f), baseColor, baseColor))),
     ) {
         Column(
