@@ -42,8 +42,7 @@
     <string name="new_empty">Alles gehört.\nNeue Episoden der letzten 30 Tage erscheinen hier.</string>
     <string name="queue_empty">Die Warteschlange ist leer.\nFüge Episoden mit „Als Nächstes abspielen“ oder „Zur Warteschlange“ hinzu.</string>
     <string name="downloads_empty">Keine heruntergeladenen Episoden.</string>
-    <string name="move_up">Nach oben</string>
-    <string name="move_down">Nach unten</string>
+    <string name="move">Verschieben</string>
 
     <!-- Search -->
     <string name="search_hint">Suchen oder Feed-URL einfügen</string>

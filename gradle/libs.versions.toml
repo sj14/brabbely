@@ -17,6 +17,7 @@ coil = "3.6.3"
 okhttp = "5.5.1"
 palette = "1.1.0"
 documentfile = "1.1.0"
+reorderable = "3.1.0"
 junit = "4.13.2"
 
 [libraries]
@@ -44,6 +45,7 @@ coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" 
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }
+reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 palette = { module = "androidx.palette:palette-ktx", version.ref = "palette" }
 junit = { module = "junit:junit", version.ref = "junit" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }

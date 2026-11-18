@@ -44,8 +44,7 @@
     <string name="new_empty">You are all caught up.\nNew episodes of the last 30 days appear here.</string>
     <string name="queue_empty">The queue is empty.\nAdd episodes with \"Play next\" or \"Add to queue\".</string>
     <string name="downloads_empty">No downloaded episodes.</string>
-    <string name="move_up">Move up</string>
-    <string name="move_down">Move down</string>
+    <string name="move">Move</string>
 
     <!-- Search -->
     <string name="search_hint">Search or paste feed URL</string>

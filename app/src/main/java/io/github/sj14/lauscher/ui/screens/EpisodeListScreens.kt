@@ -1,25 +1,26 @@
 package io.github.sj14.lauscher.ui.screens
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.DownloadForOffline
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,12 +31,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.sj14.lauscher.R
 import io.github.sj14.lauscher.data.db.EpisodeWithPodcast
 import io.github.sj14.lauscher.ui.LocalContainer
 import io.github.sj14.lauscher.ui.components.EmptyState
 import io.github.sj14.lauscher.ui.components.EpisodeRow
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlinx.coroutines.launch
 
 /** Unplayed episodes of the last weeks across all subscriptions. */
@@ -78,36 +82,49 @@ fun QueueScreen(onOpenEpisode: (Long) -> Unit) {
     val queue by queueFlow.collectAsStateWithLifecycle(null)
     val scope = rememberCoroutineScope()
 
-    fun move(from: Int, to: Int) {
-        val ids = queue.orEmpty().map { it.episode.id }.toMutableList()
-        ids.add(to, ids.removeAt(from))
+    // A local copy, so the list follows the finger while dragging; it is saved when the drag ends.
+    var items by remember { mutableStateOf(emptyList<EpisodeWithPodcast>()) }
+    LaunchedEffect(queue) { queue?.let { items = it } }
+
+    val listState = rememberLazyListState()
+    val reorderState = rememberReorderableLazyListState(listState) { from, to ->
+        items = items.toMutableList().apply { add(to.index, removeAt(from.index)) }
+    }
+
+    fun saveOrder() {
+        val ids = items.map { it.episode.id }
         scope.launch { container.repository.reorderQueue(ids) }
     }
 
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.queue)) }) }) { padding ->
-        val list = queue ?: return@Scaffold
-        if (list.isEmpty()) {
+        if (queue == null) return@Scaffold
+        if (items.isEmpty()) {
             Box(Modifier.padding(padding)) {
                 EmptyState(stringResource(R.string.queue_empty), Icons.AutoMirrored.Rounded.PlaylistPlay)
             }
             return@Scaffold
         }
-        LazyColumn(Modifier.fillMaxSize().padding(padding)) {
-            itemsIndexed(list, key = { _, item -> item.episode.id }) { index, item ->
-                Row(Modifier.animateItem(), verticalAlignment = Alignment.CenterVertically) {
-                    EpisodeRow(
-                        episode = item.episode,
-                        podcastTitle = item.podcast.title,
-                        podcastImageUrl = item.podcast.imageUrl,
-                        onClick = { onOpenEpisode(item.episode.id) },
-                        modifier = Modifier.weight(1f),
-                    )
-                    Column {
-                        IconButton(onClick = { move(index, index - 1) }, enabled = index > 0) {
-                            Icon(Icons.Rounded.KeyboardArrowUp, stringResource(R.string.move_up))
-                        }
-                        IconButton(onClick = { move(index, index + 1) }, enabled = index < list.lastIndex) {
-                            Icon(Icons.Rounded.KeyboardArrowDown, stringResource(R.string.move_down))
+        LazyColumn(Modifier.fillMaxSize().padding(padding), state = listState) {
+            items(items, key = { it.episode.id }) { item ->
+                ReorderableItem(reorderState, key = item.episode.id) { isDragging ->
+                    val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
+                    Surface(shadowElevation = elevation) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            EpisodeRow(
+                                episode = item.episode,
+                                podcastTitle = item.podcast.title,
+                                podcastImageUrl = item.podcast.imageUrl,
+                                onClick = { onOpenEpisode(item.episode.id) },
+                                modifier = Modifier.weight(1f),
+                            )
+                            Icon(
+                                Icons.Rounded.DragHandle,
+                                contentDescription = stringResource(R.string.move),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .draggableHandle(onDragStopped = ::saveOrder)
+                                    .padding(start = 4.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+                            )
                         }
                     }
                 }
