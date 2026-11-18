@@ -5,7 +5,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
@@ -20,6 +19,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -72,7 +74,11 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
-    val isTopLevel = tabs.any { it.route == route }
+    // The tab the current screen was opened from, so it stays highlighted on detail screens.
+    var selectedTab by rememberSaveable { mutableStateOf(Routes.LIBRARY) }
+    LaunchedEffect(route) {
+        if (tabs.any { it.route == route }) selectedTab = route!!
+    }
 
     LaunchedEffect(openPlayer) {
         if (openPlayer) {
@@ -86,11 +92,9 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (route == Routes.PLAYER) return@Scaffold
-            // The navigation bar handles the system bar inset itself; without it the mini player has to.
-            val insetPadding = if (isTopLevel) Modifier else Modifier.navigationBarsPadding()
-            Column(insetPadding) {
+            Column {
                 MiniPlayer(onOpen = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } })
-                if (isTopLevel) BottomBar(navController, route)
+                BottomBar(navController, selectedTab)
             }
         },
     ) { padding ->
@@ -139,12 +143,19 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
 }
 
 @Composable
-private fun BottomBar(navController: NavHostController, currentRoute: String?) {
+private fun BottomBar(navController: NavHostController, selectedTab: String) {
     NavigationBar {
         for (tab in tabs) {
             NavigationBarItem(
-                selected = currentRoute == tab.route,
-                onClick = { switchTab(navController, tab.route) },
+                selected = selectedTab == tab.route,
+                onClick = {
+                    if (tab.route == selectedTab) {
+                        // Tapping the current tab again goes back to its start, e.g. from a podcast to the library.
+                        navController.popBackStack(tab.route, inclusive = false)
+                    } else {
+                        switchTab(navController, tab.route)
+                    }
+                },
                 icon = { Icon(tab.icon, null) },
                 label = { Text(stringResource(tab.label)) },
             )
