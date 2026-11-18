@@ -79,10 +79,14 @@
     <string name="skip_silence_summary">Kürzt Sprechpausen</string>
     <string name="continue_with_queue">Mit Warteschlange fortfahren</string>
     <string name="continue_with_queue_summary">Nach dem Ende einer Episode die nächste aus der Warteschlange abspielen</string>
-    <string name="sleep_shake">Schütteln startet neu</string>
-    <string name="sleep_shake_summary">Schütteln des Handys startet den laufenden Sleep-Timer neu, mit kurzer Vibration</string>
+    <string name="sleep_shake">Neustart durch Schütteln</string>
+    <string name="sleep_shake_summary">Schütteln des Handys startet den laufenden Sleep-Timer neu, mit kurzer Vibration. Je empfindlicher, desto leichter darf das Schütteln sein.</string>
     <string name="sleep_fade">Ausblenden</string>
-    <string name="sleep_fade_summary">Lautstärke vor dem Pausieren langsam verringern</string>
+    <string name="sleep_fade_summary">Wie lange die Lautstärke vor dem Pausieren langsam verringert wird.</string>
+    <string name="off">Aus</string>
+    <string name="shake_high">Empfindlich (leichtes Schütteln)</string>
+    <string name="shake_medium">Mittel</string>
+    <string name="shake_low">Unempfindlich (kräftiges Schütteln)</string>
     <string name="auto_download">Neue Episoden herunterladen</string>
     <string name="auto_download_summary">Automatisch nach jeder Aktualisierung</string>
     <string name="wifi_only">Nur im WLAN herunterladen</string>

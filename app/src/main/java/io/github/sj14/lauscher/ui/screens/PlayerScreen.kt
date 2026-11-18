@@ -78,6 +78,7 @@ import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.toBitmap
 import io.github.sj14.lauscher.R
+import io.github.sj14.lauscher.data.ShakeSensitivity
 import io.github.sj14.lauscher.data.db.Chapter
 import io.github.sj14.lauscher.playback.SleepTimerState
 import io.github.sj14.lauscher.ui.LocalContainer
@@ -343,8 +344,10 @@ private fun SleepSheet(state: SleepTimerState, onDone: () -> Unit) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
     val timer = container.sleepTimer
+    val settings by container.settings.settings.collectAsStateWithLifecycle(null)
+    val shakeEnabled = settings?.sleepShakeSensitivity != ShakeSensitivity.OFF
     SheetTitle(stringResource(R.string.sleep_timer))
-    if (state is SleepTimerState.Countdown) {
+    if (state is SleepTimerState.Countdown && shakeEnabled) {
         Text(
             stringResource(R.string.sleep_shake_hint),
             style = MaterialTheme.typography.bodySmall,

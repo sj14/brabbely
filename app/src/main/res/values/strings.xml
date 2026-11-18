@@ -81,10 +81,14 @@
     <string name="skip_silence_summary">Shortens pauses in speech</string>
     <string name="continue_with_queue">Continue with queue</string>
     <string name="continue_with_queue_summary">Play the next episode of the queue when one ends</string>
-    <string name="sleep_shake">Shake to restart</string>
-    <string name="sleep_shake_summary">Shaking the phone restarts the running sleep timer, with a short vibration</string>
+    <string name="sleep_shake">Restart by shaking</string>
+    <string name="sleep_shake_summary">Shaking the phone restarts the running sleep timer, with a short vibration. The more sensitive, the lighter a shake is enough.</string>
     <string name="sleep_fade">Fade out</string>
-    <string name="sleep_fade_summary">Lower the volume slowly before pausing</string>
+    <string name="sleep_fade_summary">How long the volume is lowered slowly before playback pauses.</string>
+    <string name="off">Off</string>
+    <string name="shake_high">Sensitive (light shake)</string>
+    <string name="shake_medium">Medium</string>
+    <string name="shake_low">Insensitive (firm shake)</string>
     <string name="auto_download">Download new episodes</string>
     <string name="auto_download_summary">Automatically after each update</string>
     <string name="wifi_only">Download only on Wi-Fi</string>

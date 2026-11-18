@@ -40,12 +40,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.sj14.lauscher.BuildConfig
 import io.github.sj14.lauscher.LOG_TAG
 import io.github.sj14.lauscher.R
+import io.github.sj14.lauscher.data.ShakeSensitivity
 import io.github.sj14.lauscher.data.ThemeMode
 import io.github.sj14.lauscher.ui.LocalContainer
 import kotlinx.coroutines.launch
 
 private val SKIP_SECONDS = listOf(5, 10, 15, 30, 45, 60)
 private val REFRESH_HOURS = listOf(1, 3, 6, 12, 24)
+private val FADE_SECONDS = listOf(0, 5, 10, 15, 30, 60)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -138,17 +140,28 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
             )
 
             Section(stringResource(R.string.sleep_timer))
-            SwitchSetting(
+            ChoiceSetting(
                 title = stringResource(R.string.sleep_shake),
-                summary = stringResource(R.string.sleep_shake_summary),
-                checked = settings.sleepShakeToReset,
-                onChange = { update { repo.setSleepShake(it) } },
+                description = stringResource(R.string.sleep_shake_summary),
+                options = ShakeSensitivity.entries,
+                selected = settings.sleepShakeSensitivity,
+                label = {
+                    when (it) {
+                        ShakeSensitivity.OFF -> stringResource(R.string.off)
+                        ShakeSensitivity.HIGH -> stringResource(R.string.shake_high)
+                        ShakeSensitivity.MEDIUM -> stringResource(R.string.shake_medium)
+                        ShakeSensitivity.LOW -> stringResource(R.string.shake_low)
+                    }
+                },
+                onSelect = { update { repo.setSleepShake(it) } },
             )
-            SwitchSetting(
+            ChoiceSetting(
                 title = stringResource(R.string.sleep_fade),
-                summary = stringResource(R.string.sleep_fade_summary),
-                checked = settings.sleepFadeOut,
-                onChange = { update { repo.setSleepFade(it) } },
+                description = stringResource(R.string.sleep_fade_summary),
+                options = FADE_SECONDS,
+                selected = settings.sleepFadeSeconds,
+                label = { if (it == 0) stringResource(R.string.off) else pluralStringResource(R.plurals.seconds, it, it) },
+                onSelect = { update { repo.setSleepFade(it) } },
             )
 
             Section(stringResource(R.string.section_downloads))
@@ -259,6 +272,7 @@ private fun <T> ChoiceSetting(
     selected: T,
     label: @Composable (T) -> String,
     onSelect: (T) -> Unit,
+    description: String? = null,
 ) {
     var open by remember { mutableStateOf(false) }
     ListItem(
@@ -272,6 +286,9 @@ private fun <T> ChoiceSetting(
         title = { Text(title) },
         text = {
             Column {
+                if (description != null) {
+                    Text(description, Modifier.padding(bottom = 8.dp))
+                }
                 for (option in options) {
                     ListItem(
                         headlineContent = { Text(label(option)) },

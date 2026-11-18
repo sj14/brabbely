@@ -102,7 +102,7 @@ class PlaybackService : MediaSessionService() {
         settings = new
         player.playbackParameters = PlaybackParameters(new.playbackSpeed)
         player.skipSilenceEnabled = new.skipSilence
-        container.sleepTimer.configure(new.sleepShakeToReset, new.sleepFadeOut)
+        container.sleepTimer.configure(new.sleepShakeSensitivity.thresholdG, new.sleepFadeSeconds * 1000L)
         if (buttonsChanged) session.setMediaButtonPreferences(mediaButtons())
     }
 

@@ -15,6 +15,14 @@ import kotlinx.coroutines.flow.map
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
+/** How hard the phone has to be shaken to restart the sleep timer, as acceleration in g. */
+enum class ShakeSensitivity(val thresholdG: Float?) {
+    OFF(null),
+    HIGH(1.2f),
+    MEDIUM(1.4f),
+    LOW(1.8f),
+}
+
 data class AppSettings(
     val skipBackSeconds: Int = 10,
     val skipForwardSeconds: Int = 30,
@@ -26,8 +34,9 @@ data class AppSettings(
     val deletePlayed: Boolean = true,
     val refreshIntervalHours: Int = 6,
     val sleepTimerMinutes: Int = 30,
-    val sleepShakeToReset: Boolean = true,
-    val sleepFadeOut: Boolean = true,
+    val sleepShakeSensitivity: ShakeSensitivity = ShakeSensitivity.MEDIUM,
+    /** How long the volume fades out before the sleep timer pauses, 0 for no fade-out. */
+    val sleepFadeSeconds: Int = 15,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
 )
@@ -48,8 +57,8 @@ class SettingsRepository(context: Context) {
         val deletePlayed = booleanPreferencesKey("delete_played")
         val refreshInterval = intPreferencesKey("refresh_interval")
         val sleepMinutes = intPreferencesKey("sleep_minutes")
-        val sleepShake = booleanPreferencesKey("sleep_shake")
-        val sleepFade = booleanPreferencesKey("sleep_fade")
+        val sleepShake = stringPreferencesKey("sleep_shake_sensitivity")
+        val sleepFade = intPreferencesKey("sleep_fade_seconds")
         val themeMode = stringPreferencesKey("theme_mode")
         val dynamicColor = booleanPreferencesKey("dynamic_color")
     }
@@ -67,8 +76,9 @@ class SettingsRepository(context: Context) {
             deletePlayed = prefs[Keys.deletePlayed] ?: defaults.deletePlayed,
             refreshIntervalHours = prefs[Keys.refreshInterval] ?: defaults.refreshIntervalHours,
             sleepTimerMinutes = prefs[Keys.sleepMinutes] ?: defaults.sleepTimerMinutes,
-            sleepShakeToReset = prefs[Keys.sleepShake] ?: defaults.sleepShakeToReset,
-            sleepFadeOut = prefs[Keys.sleepFade] ?: defaults.sleepFadeOut,
+            sleepShakeSensitivity = prefs[Keys.sleepShake]?.let { ShakeSensitivity.valueOf(it) }
+                ?: defaults.sleepShakeSensitivity,
+            sleepFadeSeconds = prefs[Keys.sleepFade] ?: defaults.sleepFadeSeconds,
             themeMode = prefs[Keys.themeMode]?.let { ThemeMode.valueOf(it) } ?: defaults.themeMode,
             dynamicColor = prefs[Keys.dynamicColor] ?: defaults.dynamicColor,
         )
@@ -86,8 +96,8 @@ class SettingsRepository(context: Context) {
     suspend fun setDeletePlayed(enabled: Boolean) = store.edit { it[Keys.deletePlayed] = enabled }
     suspend fun setRefreshInterval(hours: Int) = store.edit { it[Keys.refreshInterval] = hours }
     suspend fun setSleepMinutes(minutes: Int) = store.edit { it[Keys.sleepMinutes] = minutes }
-    suspend fun setSleepShake(enabled: Boolean) = store.edit { it[Keys.sleepShake] = enabled }
-    suspend fun setSleepFade(enabled: Boolean) = store.edit { it[Keys.sleepFade] = enabled }
+    suspend fun setSleepShake(sensitivity: ShakeSensitivity) = store.edit { it[Keys.sleepShake] = sensitivity.name }
+    suspend fun setSleepFade(seconds: Int) = store.edit { it[Keys.sleepFade] = seconds }
     suspend fun setThemeMode(mode: ThemeMode) = store.edit { it[Keys.themeMode] = mode.name }
     suspend fun setDynamicColor(enabled: Boolean) = store.edit { it[Keys.dynamicColor] = enabled }
 }

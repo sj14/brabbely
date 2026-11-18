@@ -39,8 +39,9 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
 
     private var player: Player? = null
     private var countdownJob: Job? = null
-    private var shakeToReset = true
-    private var fadeOut = true
+    /** Acceleration in g that counts as a shake, null if shaking does nothing. */
+    private var shakeThresholdG: Float? = null
+    private var fadeOutMs = 0L
 
     private val sensorManager = context.getSystemService(SensorManager::class.java)
     private var shakeListener: SensorEventListener? = null
@@ -55,11 +56,11 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
         player = null
     }
 
-    fun configure(shakeToReset: Boolean, fadeOut: Boolean) {
-        this.shakeToReset = shakeToReset
-        this.fadeOut = fadeOut
+    fun configure(shakeThresholdG: Float?, fadeOutMs: Long) {
+        this.shakeThresholdG = shakeThresholdG
+        this.fadeOutMs = fadeOutMs
         if (_state.value is SleepTimerState.Countdown) {
-            if (shakeToReset) startShakeDetection() else stopShakeDetection()
+            if (shakeThresholdG != null) startShakeDetection() else stopShakeDetection()
         }
     }
 
@@ -67,7 +68,7 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
         val durationMs = minutes * 60_000L
         _state.value = SleepTimerState.Countdown(durationMs, durationMs)
         restoreVolume()
-        if (shakeToReset) startShakeDetection()
+        if (shakeThresholdG != null) startShakeDetection()
         countdownJob?.cancel()
         countdownJob = scope.launch { runCountdown() }
     }
@@ -118,8 +119,8 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
                 return
             }
             _state.value = current.copy(remainingMs = remaining)
-            if (fadeOut && remaining < FADE_OUT_MS) {
-                player.volume = remaining.toFloat() / FADE_OUT_MS
+            if (remaining < fadeOutMs) {
+                player.volume = remaining.toFloat() / fadeOutMs
             }
         }
     }
@@ -145,7 +146,8 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
                 val (x, y, z) = event.values
                 val gForce = sqrt(x * x + y * y + z * z) / SensorManager.GRAVITY_EARTH
                 val now = System.currentTimeMillis()
-                if (gForce > SHAKE_THRESHOLD_G && now - lastShake > SHAKE_DEBOUNCE_MS) {
+                val threshold = shakeThresholdG ?: return
+                if (gForce > threshold && now - lastShake > SHAKE_DEBOUNCE_MS) {
                     lastShake = now
                     reset()
                     vibrate()
@@ -175,9 +177,6 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
 
     companion object {
         private const val TICK_MS = 250L
-        private const val FADE_OUT_MS = 15_000L
-        /** A light shake; walking or turning over in bed stays below this. */
-        private const val SHAKE_THRESHOLD_G = 1.4f
         private const val SHAKE_DEBOUNCE_MS = 1_000L
         private const val VIBRATION_MS = 60L
     }
