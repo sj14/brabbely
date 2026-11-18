@@ -1,0 +1,279 @@
+package io.github.sj14.lauscher.ui.screens
+
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.sj14.lauscher.BuildConfig
+import io.github.sj14.lauscher.R
+import io.github.sj14.lauscher.data.ThemeMode
+import io.github.sj14.lauscher.ui.LocalContainer
+import kotlinx.coroutines.launch
+
+private val SKIP_SECONDS = listOf(5, 10, 15, 30, 45, 60)
+private val REFRESH_HOURS = listOf(1, 3, 6, 12, 24)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
+    val container = LocalContainer.current
+    val repo = container.settings
+    val settings = container.settings.settings.collectAsStateWithLifecycle(null).value
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val resources = LocalResources.current
+
+    fun update(action: suspend () -> Unit) {
+        scope.launch { action() }
+    }
+
+    val exportDone = stringResource(R.string.opml_exported)
+    val failed = stringResource(R.string.error_loading)
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            val message = try {
+                val count = context.contentResolver.openInputStream(uri)!!.use { container.repository.importOpml(it) }
+                resources.getQuantityString(R.plurals.opml_imported, count, count)
+            } catch (e: Exception) {
+                failed
+            }
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/x-opml")) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            val message = try {
+                context.contentResolver.openOutputStream(uri)!!.use { container.repository.exportOpml(it) }
+                exportDone
+            } catch (e: Exception) {
+                failed
+            }
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text(stringResource(R.string.settings)) }, navigationIcon = { BackButton(onBack) })
+        },
+    ) { padding ->
+        if (settings == null) return@Scaffold
+        Column(
+            Modifier
+                .padding(padding)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            Section(stringResource(R.string.section_playback))
+            ChoiceSetting(
+                title = stringResource(R.string.skip_back),
+                options = SKIP_SECONDS,
+                selected = settings.skipBackSeconds,
+                label = { pluralStringResource(R.plurals.seconds, it, it) },
+                onSelect = { update { repo.setSkipBack(it) } },
+            )
+            ChoiceSetting(
+                title = stringResource(R.string.skip_forward),
+                options = SKIP_SECONDS,
+                selected = settings.skipForwardSeconds,
+                label = { pluralStringResource(R.plurals.seconds, it, it) },
+                onSelect = { update { repo.setSkipForward(it) } },
+            )
+            SwitchSetting(
+                title = stringResource(R.string.skip_silence),
+                summary = stringResource(R.string.skip_silence_summary),
+                checked = settings.skipSilence,
+                onChange = { update { repo.setSkipSilence(it) } },
+            )
+            SwitchSetting(
+                title = stringResource(R.string.continue_with_queue),
+                summary = stringResource(R.string.continue_with_queue_summary),
+                checked = settings.continueWithQueue,
+                onChange = { update { repo.setContinueWithQueue(it) } },
+            )
+
+            Section(stringResource(R.string.sleep_timer))
+            SwitchSetting(
+                title = stringResource(R.string.sleep_shake),
+                summary = stringResource(R.string.sleep_shake_summary),
+                checked = settings.sleepShakeToReset,
+                onChange = { update { repo.setSleepShake(it) } },
+            )
+            SwitchSetting(
+                title = stringResource(R.string.sleep_fade),
+                summary = stringResource(R.string.sleep_fade_summary),
+                checked = settings.sleepFadeOut,
+                onChange = { update { repo.setSleepFade(it) } },
+            )
+
+            Section(stringResource(R.string.section_downloads))
+            SwitchSetting(
+                title = stringResource(R.string.auto_download),
+                summary = stringResource(R.string.auto_download_summary),
+                checked = settings.autoDownload,
+                onChange = { update { repo.setAutoDownload(it) } },
+            )
+            SwitchSetting(
+                title = stringResource(R.string.wifi_only),
+                checked = settings.wifiOnly,
+                onChange = { update { repo.setWifiOnly(it) } },
+            )
+            SwitchSetting(
+                title = stringResource(R.string.delete_played),
+                checked = settings.deletePlayed,
+                onChange = { update { repo.setDeletePlayed(it) } },
+            )
+            ChoiceSetting(
+                title = stringResource(R.string.refresh_interval),
+                options = REFRESH_HOURS,
+                selected = settings.refreshIntervalHours,
+                label = { pluralStringResource(R.plurals.hours, it, it) },
+                onSelect = { update { repo.setRefreshInterval(it) } },
+            )
+            ClickSetting(stringResource(R.string.downloads), onClick = onOpenDownloads)
+
+            Section(stringResource(R.string.section_appearance))
+            ChoiceSetting(
+                title = stringResource(R.string.theme),
+                options = ThemeMode.entries,
+                selected = settings.themeMode,
+                label = {
+                    when (it) {
+                        ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
+                        ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+                        ThemeMode.DARK -> stringResource(R.string.theme_dark)
+                    }
+                },
+                onSelect = { update { repo.setThemeMode(it) } },
+            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                SwitchSetting(
+                    title = stringResource(R.string.dynamic_color),
+                    summary = stringResource(R.string.dynamic_color_summary),
+                    checked = settings.dynamicColor,
+                    onChange = { update { repo.setDynamicColor(it) } },
+                )
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ClickSetting(stringResource(R.string.language), stringResource(R.string.language_summary)) {
+                    val intent = Intent(Settings.ACTION_APP_LOCALE_SETTINGS, Uri.fromParts("package", context.packageName, null))
+                    context.startActivity(intent)
+                }
+            }
+
+            Section(stringResource(R.string.section_subscriptions))
+            ClickSetting(stringResource(R.string.opml_import), stringResource(R.string.opml_import_summary)) {
+                importLauncher.launch(arrayOf("*/*"))
+            }
+            ClickSetting(stringResource(R.string.opml_export)) {
+                exportLauncher.launch("lauscher.opml")
+            }
+
+            Section(stringResource(R.string.section_about))
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.app_name)) },
+                supportingContent = { Text(stringResource(R.string.version, BuildConfig.VERSION_NAME)) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun Section(title: String) {
+    Text(
+        title,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 4.dp),
+    )
+}
+
+@Composable
+private fun SwitchSetting(title: String, checked: Boolean, onChange: (Boolean) -> Unit, summary: String? = null) {
+    ListItem(
+        headlineContent = { Text(title) },
+        supportingContent = summary?.let { { Text(it) } },
+        trailingContent = { Switch(checked = checked, onCheckedChange = onChange) },
+        modifier = Modifier.clickable { onChange(!checked) },
+    )
+}
+
+@Composable
+private fun ClickSetting(title: String, summary: String? = null, onClick: () -> Unit) {
+    ListItem(
+        headlineContent = { Text(title) },
+        supportingContent = summary?.let { { Text(it) } },
+        modifier = Modifier.clickable(onClick = onClick),
+    )
+}
+
+@Composable
+private fun <T> ChoiceSetting(
+    title: String,
+    options: List<T>,
+    selected: T,
+    label: @Composable (T) -> String,
+    onSelect: (T) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    ListItem(
+        headlineContent = { Text(title) },
+        supportingContent = { Text(label(selected)) },
+        modifier = Modifier.clickable { open = true },
+    )
+    if (!open) return
+    AlertDialog(
+        onDismissRequest = { open = false },
+        title = { Text(title) },
+        text = {
+            Column {
+                for (option in options) {
+                    ListItem(
+                        headlineContent = { Text(label(option)) },
+                        leadingContent = { RadioButton(selected = option == selected, onClick = null) },
+                        modifier = Modifier.selectable(selected = option == selected) {
+                            onSelect(option)
+                            open = false
+                        },
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { open = false }) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}

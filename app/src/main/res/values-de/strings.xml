@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Navigation -->
+    <string name="library">Bibliothek</string>
+    <string name="new_episodes">Neu</string>
+    <string name="queue">Warteschlange</string>
+    <string name="discover">Entdecken</string>
+    <string name="settings">Einstellungen</string>
+    <string name="downloads">Downloads</string>
+    <string name="back">Zurück</string>
+    <string name="more">Mehr</string>
+    <string name="cancel">Abbrechen</string>
+
+    <!-- Library and podcasts -->
+    <string name="add_podcast">Podcast hinzufügen</string>
+    <string name="library_empty">Noch keine Abos.\nFinde Podcasts unter Entdecken oder importiere eine OPML-Datei in den Einstellungen.</string>
+    <string name="subscribe">Abonnieren</string>
+    <string name="subscribed">Abonniert</string>
+    <string name="unsubscribe">Abo beenden</string>
+    <string name="unsubscribe_title">Abo beenden?</string>
+    <string name="unsubscribe_text">Der Podcast und seine heruntergeladenen Episoden werden entfernt.</string>
+    <string name="mark_all_played">Alle als gehört markieren</string>
+    <plurals name="episode_count">
+        <item quantity="one">%d Episode</item>
+        <item quantity="other">%d Episoden</item>
+    </plurals>
+
+    <!-- Episodes -->
+    <string name="play">Abspielen</string>
+    <string name="pause">Pause</string>
+    <string name="play_next">Als Nächstes abspielen</string>
+    <string name="add_to_queue">Zur Warteschlange</string>
+    <string name="remove_from_queue">Aus Warteschlange entfernen</string>
+    <string name="mark_played">Als gehört markieren</string>
+    <string name="mark_unplayed">Als ungehört markieren</string>
+    <string name="download">Herunterladen</string>
+    <string name="downloading">Episode wird heruntergeladen</string>
+    <string name="download_failed">Download fehlgeschlagen, tippen zum Wiederholen</string>
+    <string name="delete_download">Download löschen</string>
+    <string name="time_left">noch %s</string>
+    <string name="new_empty">Alles gehört.\nNeue Episoden der letzten 30 Tage erscheinen hier.</string>
+    <string name="queue_empty">Die Warteschlange ist leer.\nFüge Episoden mit „Als Nächstes abspielen“ oder „Zur Warteschlange“ hinzu.</string>
+    <string name="downloads_empty">Keine heruntergeladenen Episoden.</string>
+    <string name="move_up">Nach oben</string>
+    <string name="move_down">Nach unten</string>
+
+    <!-- Search -->
+    <string name="search_hint">Suchen oder Feed-URL einfügen</string>
+    <string name="search_intro">Suche Podcasts nach Namen oder füge die Adresse eines RSS-Feeds ein.</string>
+    <string name="search_no_results">Keine Podcasts gefunden.</string>
+    <string name="error_loading">Laden fehlgeschlagen. Prüfe die Verbindung und versuche es erneut.</string>
+
+    <!-- Player -->
+    <string name="close_player">Player schließen</string>
+    <string name="show_notes">Shownotes</string>
+    <string name="skip_back">Zurückspulen</string>
+    <string name="skip_forward">Vorspulen</string>
+    <string name="chapters">Kapitel</string>
+    <string name="playback_speed">Geschwindigkeit</string>
+    <string name="fullscreen">Vollbild</string>
+    <string name="exit_fullscreen">Vollbild beenden</string>
+    <string name="sleep_timer">Sleep-Timer</string>
+    <string name="sleep_end_of_episode">Am Ende der Episode</string>
+    <string name="sleep_end_of_episode_short">Episodenende</string>
+    <string name="sleep_off">Ausschalten</string>
+    <string name="sleep_shake_hint">Schüttle das Handy, um den Timer neu zu starten.</string>
+    <plurals name="minutes">
+        <item quantity="one">%d Minute</item>
+        <item quantity="other">%d Minuten</item>
+    </plurals>
+
+    <!-- Settings -->
+    <string name="section_playback">Wiedergabe</string>
+    <string name="section_downloads">Downloads und Aktualisierung</string>
+    <string name="section_appearance">Darstellung</string>
+    <string name="section_subscriptions">Abos</string>
+    <string name="section_about">Über</string>
+    <string name="skip_silence">Stille überspringen</string>
+    <string name="skip_silence_summary">Kürzt Sprechpausen</string>
+    <string name="continue_with_queue">Mit Warteschlange fortfahren</string>
+    <string name="continue_with_queue_summary">Nach dem Ende einer Episode die nächste aus der Warteschlange abspielen</string>
+    <string name="sleep_shake">Schütteln startet neu</string>
+    <string name="sleep_shake_summary">Schütteln des Handys startet den laufenden Sleep-Timer neu, mit kurzer Vibration</string>
+    <string name="sleep_fade">Ausblenden</string>
+    <string name="sleep_fade_summary">Lautstärke vor dem Pausieren langsam verringern</string>
+    <string name="auto_download">Neue Episoden herunterladen</string>
+    <string name="auto_download_summary">Automatisch nach jeder Aktualisierung</string>
+    <string name="wifi_only">Nur im WLAN herunterladen</string>
+    <string name="delete_played">Gehörte Episoden löschen</string>
+    <string name="refresh_interval">Nach neuen Episoden suchen</string>
+    <string name="theme">Design</string>
+    <string name="theme_system">Systemstandard</string>
+    <string name="theme_light">Hell</string>
+    <string name="theme_dark">Dunkel</string>
+    <string name="dynamic_color">Farben vom Hintergrundbild</string>
+    <string name="dynamic_color_summary">Material You</string>
+    <string name="language">Sprache</string>
+    <string name="language_summary">Sprache der App wählen</string>
+    <string name="opml_import">OPML importieren</string>
+    <string name="opml_import_summary">Abos aus einer anderen App übernehmen</string>
+    <string name="opml_export">OPML exportieren</string>
+    <plurals name="opml_imported">
+        <item quantity="one">%d Podcast importiert</item>
+        <item quantity="other">%d Podcasts importiert</item>
+    </plurals>
+    <string name="opml_exported">Abos exportiert</string>
+    <string name="version">Version %s</string>
+    <string name="notification_channel_downloads">Downloads</string>
+    <plurals name="seconds">
+        <item quantity="one">%d Sekunde</item>
+        <item quantity="other">%d Sekunden</item>
+    </plurals>
+    <plurals name="hours">
+        <item quantity="one">Jede Stunde</item>
+        <item quantity="other">Alle %d Stunden</item>
+    </plurals>
+</resources>

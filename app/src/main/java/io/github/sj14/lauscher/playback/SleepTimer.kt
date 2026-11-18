@@ -1,0 +1,184 @@
+package io.github.sj14.lauscher.playback
+
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.os.Build
+import androidx.media3.common.Player
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlin.math.sqrt
+
+sealed interface SleepTimerState {
+    data object Off : SleepTimerState
+
+    /** Counts down only while something is playing. */
+    data class Countdown(val remainingMs: Long, val durationMs: Long) : SleepTimerState
+
+    data object EndOfEpisode : SleepTimerState
+}
+
+/**
+ * Pauses playback after a while. Shaking the phone restarts the countdown, so the timer
+ * only fires once the listener has stopped moving, presumably because they fell asleep.
+ */
+class SleepTimer(private val context: Context, private val scope: CoroutineScope) {
+    private val _state = MutableStateFlow<SleepTimerState>(SleepTimerState.Off)
+    val state: StateFlow<SleepTimerState> = _state.asStateFlow()
+
+    private var player: Player? = null
+    private var countdownJob: Job? = null
+    private var shakeToReset = true
+    private var fadeOut = true
+
+    private val sensorManager = context.getSystemService(SensorManager::class.java)
+    private var shakeListener: SensorEventListener? = null
+
+    /** Called by the playback service, which owns the player. */
+    fun attach(player: Player) {
+        this.player = player
+    }
+
+    fun detach() {
+        cancel()
+        player = null
+    }
+
+    fun configure(shakeToReset: Boolean, fadeOut: Boolean) {
+        this.shakeToReset = shakeToReset
+        this.fadeOut = fadeOut
+        if (_state.value is SleepTimerState.Countdown) {
+            if (shakeToReset) startShakeDetection() else stopShakeDetection()
+        }
+    }
+
+    fun start(minutes: Int) {
+        val durationMs = minutes * 60_000L
+        _state.value = SleepTimerState.Countdown(durationMs, durationMs)
+        restoreVolume()
+        if (shakeToReset) startShakeDetection()
+        countdownJob?.cancel()
+        countdownJob = scope.launch { runCountdown() }
+    }
+
+    fun startEndOfEpisode() {
+        stopCountdown()
+        _state.value = SleepTimerState.EndOfEpisode
+    }
+
+    fun cancel() {
+        stopCountdown()
+        _state.value = SleepTimerState.Off
+    }
+
+    /** Restarts the countdown with its full duration. */
+    fun reset() {
+        val current = _state.value as? SleepTimerState.Countdown ?: return
+        _state.value = current.copy(remainingMs = current.durationMs)
+        restoreVolume()
+    }
+
+    /** Called by the playback service when an episode has ended. Returns true if playback should stop. */
+    fun onEpisodeEnded(): Boolean {
+        if (_state.value != SleepTimerState.EndOfEpisode) return false
+        _state.value = SleepTimerState.Off
+        return true
+    }
+
+    private suspend fun runCountdown() {
+        var last = System.currentTimeMillis()
+        while (scope.isActive) {
+            delay(TICK_MS)
+            val now = System.currentTimeMillis()
+            val elapsed = now - last
+            last = now
+
+            val current = _state.value as? SleepTimerState.Countdown ?: return
+            val player = player ?: continue
+            if (!player.isPlaying) continue
+
+            val remaining = current.remainingMs - elapsed
+            if (remaining <= 0) {
+                player.pause()
+                _state.value = SleepTimerState.Off
+                stopShakeDetection()
+                restoreVolume()
+                countdownJob = null
+                return
+            }
+            _state.value = current.copy(remainingMs = remaining)
+            if (fadeOut && remaining < FADE_OUT_MS) {
+                player.volume = remaining.toFloat() / FADE_OUT_MS
+            }
+        }
+    }
+
+    private fun stopCountdown() {
+        countdownJob?.cancel()
+        countdownJob = null
+        stopShakeDetection()
+        restoreVolume()
+    }
+
+    private fun restoreVolume() {
+        player?.volume = 1f
+    }
+
+    private fun startShakeDetection() {
+        if (shakeListener != null) return
+        val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) ?: return
+        val listener = object : SensorEventListener {
+            private var lastShake = 0L
+
+            override fun onSensorChanged(event: SensorEvent) {
+                val (x, y, z) = event.values
+                val gForce = sqrt(x * x + y * y + z * z) / SensorManager.GRAVITY_EARTH
+                val now = System.currentTimeMillis()
+                if (gForce > SHAKE_THRESHOLD_G && now - lastShake > SHAKE_DEBOUNCE_MS) {
+                    lastShake = now
+                    reset()
+                    vibrate()
+                }
+            }
+
+            override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) = Unit
+        }
+        sensorManager.registerListener(listener, accelerometer, SensorManager.SENSOR_DELAY_UI)
+        shakeListener = listener
+    }
+
+    private fun stopShakeDetection() {
+        shakeListener?.let(sensorManager::unregisterListener)
+        shakeListener = null
+    }
+
+    private fun vibrate() {
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            context.getSystemService(VibratorManager::class.java).defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Vibrator::class.java)
+        }
+        vibrator.vibrate(VibrationEffect.createOneShot(VIBRATION_MS, VibrationEffect.DEFAULT_AMPLITUDE))
+    }
+
+    companion object {
+        private const val TICK_MS = 250L
+        private const val FADE_OUT_MS = 15_000L
+        /** A light shake; walking or turning over in bed stays below this. */
+        private const val SHAKE_THRESHOLD_G = 1.4f
+        private const val SHAKE_DEBOUNCE_MS = 1_000L
+        private const val VIBRATION_MS = 60L
+    }
+}
