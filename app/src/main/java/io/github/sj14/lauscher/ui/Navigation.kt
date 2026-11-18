@@ -2,6 +2,9 @@ package io.github.sj14.lauscher.ui
 
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -52,7 +55,6 @@ private object Routes {
     const val SEARCH = "search"
     const val PODCAST = "podcast/{id}"
     const val EPISODE = "episode/{id}"
-    const val PLAYER = "player"
     const val SETTINGS = "settings"
     const val DOWNLOADS = "downloads"
 
@@ -80,64 +82,76 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
         if (tabs.any { it.route == route }) selectedTab = route!!
     }
 
+    // The player lies on top of the screens instead of being one, so the screen below stays
+    // unchanged while it slides up and down.
+    var playerOpen by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(openPlayer) {
         if (openPlayer) {
-            navController.navigate(Routes.PLAYER) { launchSingleTop = true }
+            playerOpen = true
             onPlayerOpened()
         }
     }
 
-    // Each screen handles the status bar itself, so the player background can reach behind it.
-    Scaffold(
-        contentWindowInsets = WindowInsets(0),
-        bottomBar = {
-            if (route == Routes.PLAYER) return@Scaffold
-            Column {
-                MiniPlayer(onOpen = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } })
-                BottomBar(navController, selectedTab)
-            }
-        },
-    ) { padding ->
-        NavHost(
-            navController = navController,
-            startDestination = Routes.LIBRARY,
-            modifier = Modifier
-                .padding(padding)
-                .consumeWindowInsets(padding),
-        ) {
-            val openPodcast = { id: Long -> navController.navigate(Routes.podcast(id)) }
-            val openEpisode = { id: Long -> navController.navigate(Routes.episode(id)) }
-            val back: () -> Unit = { navController.popBackStack() }
-            val idArgument = listOf(navArgument("id") { type = NavType.LongType })
-
-            composable(Routes.LIBRARY) {
-                LibraryScreen(
-                    onOpenPodcast = openPodcast,
-                    onOpenSearch = { switchTab(navController, Routes.SEARCH) },
-                    onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-                )
-            }
-            composable(Routes.NEW) { NewEpisodesScreen(onOpenEpisode = openEpisode) }
-            composable(Routes.QUEUE) { QueueScreen(onOpenEpisode = openEpisode) }
-            composable(Routes.SEARCH) { SearchScreen(onOpenPodcast = openPodcast) }
-            composable(Routes.PODCAST, idArgument) { entry ->
-                PodcastScreen(entry.arguments!!.getLong("id"), onBack = back, onOpenEpisode = openEpisode)
-            }
-            composable(Routes.EPISODE, idArgument) { entry ->
-                EpisodeScreen(entry.arguments!!.getLong("id"), onBack = back, onOpenPodcast = openPodcast)
-            }
-            composable(
-                Routes.PLAYER,
-                enterTransition = { slideInVertically { it } },
-                exitTransition = { slideOutVertically { it } },
-                popExitTransition = { slideOutVertically { it } },
+    Box {
+        // Each screen handles the status bar itself.
+        Scaffold(
+            contentWindowInsets = WindowInsets(0),
+            bottomBar = {
+                Column {
+                    MiniPlayer(onOpen = { playerOpen = true })
+                    BottomBar(navController, selectedTab)
+                }
+            },
+        ) { padding ->
+            NavHost(
+                navController = navController,
+                startDestination = Routes.LIBRARY,
+                modifier = Modifier
+                    .padding(padding)
+                    .consumeWindowInsets(padding),
             ) {
-                PlayerScreen(onClose = back, onShowEpisode = openEpisode)
+                val openPodcast = { id: Long -> navController.navigate(Routes.podcast(id)) }
+                val openEpisode = { id: Long -> navController.navigate(Routes.episode(id)) }
+                val back: () -> Unit = { navController.popBackStack() }
+                val idArgument = listOf(navArgument("id") { type = NavType.LongType })
+
+                composable(Routes.LIBRARY) {
+                    LibraryScreen(
+                        onOpenPodcast = openPodcast,
+                        onOpenSearch = { switchTab(navController, Routes.SEARCH) },
+                        onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                    )
+                }
+                composable(Routes.NEW) { NewEpisodesScreen(onOpenEpisode = openEpisode) }
+                composable(Routes.QUEUE) { QueueScreen(onOpenEpisode = openEpisode) }
+                composable(Routes.SEARCH) { SearchScreen(onOpenPodcast = openPodcast) }
+                composable(Routes.PODCAST, idArgument) { entry ->
+                    PodcastScreen(entry.arguments!!.getLong("id"), onBack = back, onOpenEpisode = openEpisode)
+                }
+                composable(Routes.EPISODE, idArgument) { entry ->
+                    EpisodeScreen(entry.arguments!!.getLong("id"), onBack = back, onOpenPodcast = openPodcast)
+                }
+                composable(Routes.SETTINGS) {
+                    SettingsScreen(onBack = back, onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) })
+                }
+                composable(Routes.DOWNLOADS) { DownloadsScreen(onBack = back, onOpenEpisode = openEpisode) }
             }
-            composable(Routes.SETTINGS) {
-                SettingsScreen(onBack = back, onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) })
-            }
-            composable(Routes.DOWNLOADS) { DownloadsScreen(onBack = back, onOpenEpisode = openEpisode) }
+        }
+
+        AnimatedVisibility(
+            visible = playerOpen,
+            enter = slideInVertically { it },
+            exit = slideOutVertically { it },
+        ) {
+            // Registered after the NavHost, so back closes the player instead of leaving the screen below.
+            BackHandler { playerOpen = false }
+            PlayerScreen(
+                onClose = { playerOpen = false },
+                onShowEpisode = { id ->
+                    playerOpen = false
+                    navController.navigate(Routes.episode(id))
+                },
+            )
         }
     }
 }
