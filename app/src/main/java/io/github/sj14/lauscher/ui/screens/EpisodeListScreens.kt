@@ -32,10 +32,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.sj14.lauscher.R
 import io.github.sj14.lauscher.data.db.EpisodeWithPodcast
 import io.github.sj14.lauscher.ui.LocalContainer
+import io.github.sj14.lauscher.ui.rememberScreenData
 import io.github.sj14.lauscher.ui.components.EmptyState
 import io.github.sj14.lauscher.ui.components.EpisodeRow
 import sh.calvin.reorderable.ReorderableItem
@@ -47,8 +47,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun NewEpisodesScreen(onOpenEpisode: (Long) -> Unit) {
     val container = LocalContainer.current
-    val episodesFlow = remember { container.repository.observeNew() }
-    val episodes by episodesFlow.collectAsStateWithLifecycle(null)
+    val episodes by rememberScreenData { container.repository.observeNew() }
     val scope = rememberCoroutineScope()
     var refreshing by remember { mutableStateOf(false) }
 
@@ -78,8 +77,7 @@ fun NewEpisodesScreen(onOpenEpisode: (Long) -> Unit) {
 @Composable
 fun QueueScreen(onOpenEpisode: (Long) -> Unit) {
     val container = LocalContainer.current
-    val queueFlow = remember { container.repository.observeQueue() }
-    val queue by queueFlow.collectAsStateWithLifecycle(null)
+    val queue by rememberScreenData { container.repository.observeQueue() }
     val scope = rememberCoroutineScope()
 
     // A local copy, so the list follows the finger while dragging; it is saved when the drag ends.
@@ -137,8 +135,7 @@ fun QueueScreen(onOpenEpisode: (Long) -> Unit) {
 @Composable
 fun DownloadsScreen(onBack: () -> Unit, onOpenEpisode: (Long) -> Unit) {
     val container = LocalContainer.current
-    val downloadsFlow = remember { container.repository.observeDownloads() }
-    val downloads by downloadsFlow.collectAsStateWithLifecycle(null)
+    val downloads by rememberScreenData { container.repository.observeDownloads() }
 
     Scaffold(
         topBar = {

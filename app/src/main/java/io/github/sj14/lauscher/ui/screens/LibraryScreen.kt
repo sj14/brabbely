@@ -38,10 +38,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.sj14.lauscher.R
 import io.github.sj14.lauscher.data.db.PodcastWithCounts
 import io.github.sj14.lauscher.ui.LocalContainer
+import io.github.sj14.lauscher.ui.rememberScreenData
 import io.github.sj14.lauscher.ui.components.Artwork
 import io.github.sj14.lauscher.ui.components.EmptyState
 import io.github.sj14.lauscher.ui.components.MenuItem
@@ -56,8 +56,7 @@ fun LibraryScreen(
     onOpenSettings: () -> Unit,
 ) {
     val container = LocalContainer.current
-    val libraryFlow = remember { container.repository.observeLibrary() }
-    val podcasts by libraryFlow.collectAsStateWithLifecycle(null)
+    val podcasts by rememberScreenData { container.repository.observeLibrary() }
     val scope = rememberCoroutineScope()
     var refreshing by remember { mutableStateOf(false) }
 

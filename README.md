@@ -25,7 +25,12 @@ the directory (run `direnv allow` once); without direnv use `nix develop`.
 ```sh
 ./gradlew assembleDebug          # build app/build/outputs/apk/debug/app-debug.apk
 ./gradlew installDebug           # install on a connected phone or a running emulator
+./gradlew installPreview         # optimized like a release, signed with the debug key
 ```
+
+The debug build is much slower than a release, mostly because of Jetpack Compose. To judge
+how smooth the app is, use the preview build. It installs as `io.github.sj14.lauscher.preview`
+next to the debug build.
 
 To test on a phone, enable USB debugging in the developer options of the phone and connect it.
 `adb devices` should list it.

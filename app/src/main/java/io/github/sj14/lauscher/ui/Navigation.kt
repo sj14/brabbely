@@ -4,6 +4,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -64,6 +67,8 @@ private object Routes {
     fun episode(id: Long) = "episode/$id"
 }
 
+private const val SCREEN_FADE_MS = 150
+
 private data class Tab(val route: String, val label: Int, val icon: ImageVector)
 
 private val tabs = listOf(
@@ -115,6 +120,9 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
             NavHost(
                 navController = navController,
                 startDestination = Routes.LIBRARY,
+                // Much shorter than the default of 700 ms, during which both screens are drawn.
+                enterTransition = { fadeIn(tween(SCREEN_FADE_MS)) },
+                exitTransition = { fadeOut(tween(SCREEN_FADE_MS)) },
                 modifier = Modifier
                     .padding(padding)
                     .consumeWindowInsets(padding),

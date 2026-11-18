@@ -39,10 +39,10 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.sj14.lauscher.R
 import io.github.sj14.lauscher.data.db.Podcast
 import io.github.sj14.lauscher.ui.LocalContainer
+import io.github.sj14.lauscher.ui.rememberScreenData
 import io.github.sj14.lauscher.ui.components.Artwork
 import io.github.sj14.lauscher.ui.components.EpisodeRow
 import io.github.sj14.lauscher.ui.components.HtmlText
@@ -54,10 +54,9 @@ import kotlinx.coroutines.launch
 fun PodcastScreen(podcastId: Long, onBack: () -> Unit, onOpenEpisode: (Long) -> Unit) {
     val container = LocalContainer.current
     val repository = container.repository
-    val podcastFlow = remember(podcastId) { repository.observePodcast(podcastId) }
-    val episodesFlow = remember(podcastId) { repository.observeEpisodes(podcastId) }
-    val podcast by podcastFlow.collectAsStateWithLifecycle(null)
-    val episodes by episodesFlow.collectAsStateWithLifecycle(emptyList())
+    val podcast by rememberScreenData("podcast") { repository.observePodcast(podcastId) }
+    val loadedEpisodes by rememberScreenData("episodes") { repository.observeEpisodes(podcastId) }
+    val episodes = loadedEpisodes.orEmpty()
     val scope = rememberCoroutineScope()
     var confirmUnsubscribe by remember { mutableStateOf(false) }
 

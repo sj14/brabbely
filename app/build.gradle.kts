@@ -49,6 +49,14 @@ android {
         debug {
             applicationIdSuffix = ".debug"
         }
+        // Optimized like a release, but signed with the debug key so it can be installed for
+        // testing without the release key. Compose is much slower in debug builds.
+        create("preview") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            applicationIdSuffix = ".preview"
+            matchingFallbacks += "release"
+        }
     }
 
     buildFeatures {
