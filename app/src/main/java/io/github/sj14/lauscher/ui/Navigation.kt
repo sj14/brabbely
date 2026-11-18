@@ -80,8 +80,15 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
     val route = backStack?.destination?.route
     // The tab the current screen was opened from, so it stays highlighted on detail screens.
     var selectedTab by rememberSaveable { mutableStateOf(Routes.LIBRARY) }
+    // Going back can return to another tab's start screen.
     LaunchedEffect(route) {
         if (tabs.any { it.route == route }) selectedTab = route!!
+    }
+
+    // Set right away: switching back to a tab can restore one of its detail screens, such as a podcast.
+    fun selectTab(tabRoute: String) {
+        selectedTab = tabRoute
+        switchTab(navController, tabRoute)
     }
 
     // The player lies on top of the screens instead of being one, so the screen below stays
@@ -101,7 +108,7 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
             bottomBar = {
                 Column {
                     MiniPlayer(onOpen = { playerOpen = true })
-                    BottomBar(navController, selectedTab)
+                    BottomBar(navController, selectedTab, onSelectTab = ::selectTab)
                 }
             },
         ) { padding ->
@@ -120,7 +127,7 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
                 composable(Routes.LIBRARY) {
                     LibraryScreen(
                         onOpenPodcast = openPodcast,
-                        onOpenSearch = { switchTab(navController, Routes.SEARCH) },
+                        onOpenSearch = { selectTab(Routes.SEARCH) },
                         onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                     )
                 }
@@ -163,7 +170,7 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
 }
 
 @Composable
-private fun BottomBar(navController: NavHostController, selectedTab: String) {
+private fun BottomBar(navController: NavHostController, selectedTab: String, onSelectTab: (String) -> Unit) {
     NavigationBar {
         for (tab in tabs) {
             NavigationBarItem(
@@ -173,7 +180,7 @@ private fun BottomBar(navController: NavHostController, selectedTab: String) {
                         // Tapping the current tab again goes back to its start, e.g. from a podcast to the library.
                         navController.popBackStack(tab.route, inclusive = false)
                     } else {
-                        switchTab(navController, tab.route)
+                        onSelectTab(tab.route)
                     }
                 },
                 icon = { Icon(tab.icon, null) },
