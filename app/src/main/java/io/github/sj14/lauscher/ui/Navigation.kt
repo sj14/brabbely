@@ -3,7 +3,9 @@ package io.github.sj14.lauscher.ui
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
@@ -79,10 +81,14 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
         }
     }
 
+    // Each screen handles the status bar itself, so the player background can reach behind it.
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (route == Routes.PLAYER) return@Scaffold
-            Column {
+            // The navigation bar handles the system bar inset itself; without it the mini player has to.
+            val insetPadding = if (isTopLevel) Modifier else Modifier.navigationBarsPadding()
+            Column(insetPadding) {
                 MiniPlayer(onOpen = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } })
                 if (isTopLevel) BottomBar(navController, route)
             }
