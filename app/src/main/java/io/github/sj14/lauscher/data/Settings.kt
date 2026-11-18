@@ -15,6 +15,9 @@ import kotlinx.coroutines.flow.map
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
+/** When the sleep timer starts by itself as soon as playback starts. */
+enum class SleepAutoMode { OFF, ALWAYS, TIME_WINDOW }
+
 /** How hard the phone has to be shaken to restart the sleep timer, as acceleration in g. */
 enum class ShakeSensitivity(val thresholdG: Float?) {
     OFF(null),
@@ -35,6 +38,10 @@ data class AppSettings(
     val deletePlayed: Boolean = true,
     val refreshIntervalHours: Int = 6,
     val sleepTimerMinutes: Int = 30,
+    val sleepAutoMode: SleepAutoMode = SleepAutoMode.OFF,
+    /** Start and end of the time window for [SleepAutoMode.TIME_WINDOW], in minutes after midnight. */
+    val sleepAutoStartMinutes: Int = 22 * 60,
+    val sleepAutoEndMinutes: Int = 6 * 60,
     val sleepShakeSensitivity: ShakeSensitivity = ShakeSensitivity.MEDIUM,
     val sleepShakeVibrate: Boolean = true,
     val sleepVolumeReset: Boolean = true,
@@ -42,6 +49,8 @@ data class AppSettings(
     val sleepFadeSeconds: Int = 15,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
+    /** Folder (a document tree URI) for daily backups, null if automatic backups are off. */
+    val autoBackupFolder: String? = null,
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -62,11 +71,15 @@ class SettingsRepository(context: Context) {
         val deletePlayed = booleanPreferencesKey("delete_played")
         val refreshInterval = intPreferencesKey("refresh_interval")
         val sleepMinutes = intPreferencesKey("sleep_minutes")
+        val sleepAutoMode = stringPreferencesKey("sleep_auto_mode")
+        val sleepAutoStart = intPreferencesKey("sleep_auto_start")
+        val sleepAutoEnd = intPreferencesKey("sleep_auto_end")
         val sleepShake = stringPreferencesKey("sleep_shake_sensitivity")
         val sleepFade = intPreferencesKey("sleep_fade_seconds")
         val sleepShakeVibrate = booleanPreferencesKey("sleep_shake_vibrate")
         val themeMode = stringPreferencesKey("theme_mode")
         val dynamicColor = booleanPreferencesKey("dynamic_color")
+        val autoBackupFolder = stringPreferencesKey("auto_backup_folder")
     }
 
     val settings: Flow<AppSettings> = store.data.map { prefs ->
@@ -84,19 +97,28 @@ class SettingsRepository(context: Context) {
             deletePlayed = prefs[Keys.deletePlayed] ?: defaults.deletePlayed,
             refreshIntervalHours = prefs[Keys.refreshInterval] ?: defaults.refreshIntervalHours,
             sleepTimerMinutes = prefs[Keys.sleepMinutes] ?: defaults.sleepTimerMinutes,
+            sleepAutoMode = prefs[Keys.sleepAutoMode]?.let { SleepAutoMode.valueOf(it) } ?: defaults.sleepAutoMode,
+            sleepAutoStartMinutes = prefs[Keys.sleepAutoStart] ?: defaults.sleepAutoStartMinutes,
+            sleepAutoEndMinutes = prefs[Keys.sleepAutoEnd] ?: defaults.sleepAutoEndMinutes,
             sleepShakeSensitivity = prefs[Keys.sleepShake]?.let { ShakeSensitivity.valueOf(it) }
                 ?: defaults.sleepShakeSensitivity,
             sleepFadeSeconds = prefs[Keys.sleepFade] ?: defaults.sleepFadeSeconds,
             sleepShakeVibrate = prefs[Keys.sleepShakeVibrate] ?: defaults.sleepShakeVibrate,
             themeMode = prefs[Keys.themeMode]?.let { ThemeMode.valueOf(it) } ?: defaults.themeMode,
             dynamicColor = prefs[Keys.dynamicColor] ?: defaults.dynamicColor,
+            autoBackupFolder = prefs[Keys.autoBackupFolder],
         )
     }
 
     suspend fun current(): AppSettings = settings.first()
 
-    /** All stored settings by key, for the backup. Settings left at their default are not included. */
-    suspend fun export(): Map<String, Any> = store.data.first().asMap().mapKeys { it.key.name }
+    /**
+     * All stored settings by key, for the backup. Settings left at their default are not included,
+     * nor is the backup folder: access to it is granted per device and would not work after restoring.
+     */
+    suspend fun export(): Map<String, Any> = store.data.first().asMap()
+        .filterKeys { it != Keys.autoBackupFolder }
+        .mapKeys { it.key.name }
 
     /** Writes back settings from a backup. */
     suspend fun import(values: Map<String, Any>) = store.edit { prefs ->
@@ -122,9 +144,15 @@ class SettingsRepository(context: Context) {
     suspend fun setDeletePlayed(enabled: Boolean) = store.edit { it[Keys.deletePlayed] = enabled }
     suspend fun setRefreshInterval(hours: Int) = store.edit { it[Keys.refreshInterval] = hours }
     suspend fun setSleepMinutes(minutes: Int) = store.edit { it[Keys.sleepMinutes] = minutes }
+    suspend fun setSleepAutoMode(mode: SleepAutoMode) = store.edit { it[Keys.sleepAutoMode] = mode.name }
+    suspend fun setSleepAutoStart(minutes: Int) = store.edit { it[Keys.sleepAutoStart] = minutes }
+    suspend fun setSleepAutoEnd(minutes: Int) = store.edit { it[Keys.sleepAutoEnd] = minutes }
     suspend fun setSleepShake(sensitivity: ShakeSensitivity) = store.edit { it[Keys.sleepShake] = sensitivity.name }
     suspend fun setSleepShakeVibrate(enabled: Boolean) = store.edit { it[Keys.sleepShakeVibrate] = enabled }
     suspend fun setSleepFade(seconds: Int) = store.edit { it[Keys.sleepFade] = seconds }
     suspend fun setThemeMode(mode: ThemeMode) = store.edit { it[Keys.themeMode] = mode.name }
+    suspend fun setAutoBackupFolder(uri: String?) = store.edit { prefs ->
+        if (uri == null) prefs.remove(Keys.autoBackupFolder) else prefs[Keys.autoBackupFolder] = uri
+    }
     suspend fun setDynamicColor(enabled: Boolean) = store.edit { it[Keys.dynamicColor] = enabled }
 }

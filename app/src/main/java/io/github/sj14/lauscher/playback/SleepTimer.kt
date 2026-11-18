@@ -20,6 +20,16 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.sqrt
 
+/** The durations offered for the sleep timer, in minutes. */
+val SLEEP_TIMER_MINUTES = listOf(5, 10, 15, 30, 45, 60, 90)
+
+/**
+ * Whether [minuteOfDay] lies in the window from [start] to [end] (minutes after midnight).
+ * The window may span midnight, for example from 22:00 to 06:00.
+ */
+fun isInTimeWindow(minuteOfDay: Int, start: Int, end: Int): Boolean =
+    if (start <= end) minuteOfDay in start until end else minuteOfDay >= start || minuteOfDay < end
+
 sealed interface SleepTimerState {
     data object Off : SleepTimerState
 

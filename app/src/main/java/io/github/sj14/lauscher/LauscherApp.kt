@@ -9,6 +9,7 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import io.github.sj14.lauscher.data.PodcastRepository
 import io.github.sj14.lauscher.data.SettingsRepository
+import io.github.sj14.lauscher.data.backup.AutoBackupWorker
 import io.github.sj14.lauscher.data.db.AppDatabase
 import io.github.sj14.lauscher.data.feed.PodcastSearch
 import io.github.sj14.lauscher.download.Downloads
@@ -43,7 +44,7 @@ class AppContainer(context: Context) {
     val database = AppDatabase.create(context)
     val settings = SettingsRepository(context)
     val downloads = Downloads(context, database.episodeDao())
-    val repository = PodcastRepository(database, http, settings, downloads)
+    val repository = PodcastRepository(database, http, settings, downloads, context.cacheDir)
     val search = PodcastSearch(http)
     val sleepTimer = SleepTimer(context, appScope)
     val playerConnection = PlayerConnection(context)
@@ -65,6 +66,12 @@ class LauscherApp : Application(), SingletonImageLoader.Factory {
                 .map { it.refreshIntervalHours }
                 .distinctUntilChanged()
                 .collect { container.downloads.scheduleRefresh(it) }
+        }
+        container.appScope.launch {
+            container.settings.settings
+                .map { it.autoBackupFolder != null }
+                .distinctUntilChanged()
+                .collect { AutoBackupWorker.schedule(this@LauscherApp, enabled = it) }
         }
     }
 

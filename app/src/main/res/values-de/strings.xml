@@ -80,6 +80,15 @@
     <string name="skip_silence_summary">Kürzt Sprechpausen</string>
     <string name="continue_with_queue">Mit Warteschlange fortfahren</string>
     <string name="continue_with_queue_summary">Nach dem Ende einer Episode die nächste aus der Warteschlange abspielen</string>
+    <string name="sleep_duration">Dauer</string>
+    <string name="sleep_duration_summary">Gilt, wenn der Timer automatisch startet</string>
+    <string name="sleep_auto">Automatisch starten</string>
+    <string name="sleep_auto_summary">Startet den Sleep-Timer, sobald die Wiedergabe beginnt und kein Timer läuft</string>
+    <string name="sleep_auto_always">Immer</string>
+    <string name="sleep_auto_time_window">In einem Zeitraum</string>
+    <string name="sleep_auto_from">Von</string>
+    <string name="sleep_auto_until">Bis</string>
+    <string name="ok">OK</string>
     <string name="sleep_shake">Neustart durch Schütteln</string>
     <string name="sleep_shake_summary">Schütteln des Handys startet den laufenden Sleep-Timer neu. Je empfindlicher, desto leichter darf das Schütteln sein.</string>
     <string name="sleep_shake_vibrate">Beim Schütteln vibrieren</string>
@@ -113,6 +122,11 @@
     <string name="backup_restore_summary">Abonniert erneut und stellt wieder her, was gehört wurde</string>
     <string name="backup_created">Backup erstellt</string>
     <string name="backup_restore_running">Backup wird wiederhergestellt …</string>
+    <string name="auto_backup">Automatisches Backup</string>
+    <string name="auto_backup_off">Aus – tippen, um einen Ordner zu wählen</string>
+    <string name="auto_backup_disable">Automatisches Backup ausschalten</string>
+    <string name="antennapod_import">Aus AntennaPod importieren</string>
+    <string name="antennapod_import_summary">Der Datenbank-Export von AntennaPod (Einstellungen → Import/Export)</string>
     <string name="opml_import">OPML importieren</string>
     <string name="opml_import_summary">Abos aus einer anderen App übernehmen</string>
     <string name="opml_export">OPML exportieren</string>

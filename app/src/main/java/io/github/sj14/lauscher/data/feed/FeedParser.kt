@@ -38,10 +38,14 @@ object FeedParser {
     private const val NS_CONTENT = "http://purl.org/rss/1.0/modules/content/"
     private const val NS_PSC = "http://podlove.org/simple-chapters"
     private const val NS_PODCAST = "https://podcastindex.org/namespace/1.0"
+    private const val RELAXED = "http://xmlpull.org/v1/doc/features.html#relaxed"
 
     fun parse(input: InputStream): ParsedFeed {
         val parser = Xml.newPullParser()
         parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true)
+        // Some feeds contain unescaped HTML, such as a stray </p> in a description. The relaxed
+        // mode of Android's parser accepts that instead of failing on the whole feed.
+        parser.setFeature(RELAXED, true)
         parser.setInput(input, null)
 
         var title = ""

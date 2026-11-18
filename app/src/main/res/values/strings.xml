@@ -82,6 +82,15 @@
     <string name="skip_silence_summary">Shortens pauses in speech</string>
     <string name="continue_with_queue">Continue with queue</string>
     <string name="continue_with_queue_summary">Play the next episode of the queue when one ends</string>
+    <string name="sleep_duration">Duration</string>
+    <string name="sleep_duration_summary">Used when the timer starts automatically, and preselected in the player</string>
+    <string name="sleep_auto">Start automatically</string>
+    <string name="sleep_auto_summary">Starts the sleep timer whenever playback starts and no timer is running</string>
+    <string name="sleep_auto_always">Always</string>
+    <string name="sleep_auto_time_window">In a time window</string>
+    <string name="sleep_auto_from">From</string>
+    <string name="sleep_auto_until">Until</string>
+    <string name="ok">OK</string>
     <string name="sleep_shake">Restart by shaking</string>
     <string name="sleep_shake_summary">Shaking the phone restarts the running sleep timer. The more sensitive, the lighter a shake is enough.</string>
     <string name="sleep_shake_vibrate">Vibrate on shake</string>
@@ -115,6 +124,11 @@
     <string name="backup_restore_summary">Subscribes again and restores what was played</string>
     <string name="backup_created">Backup created</string>
     <string name="backup_restore_running">Restoring backup…</string>
+    <string name="auto_backup">Automatic backup</string>
+    <string name="auto_backup_off">Off – tap to choose a folder</string>
+    <string name="auto_backup_disable">Turn off automatic backup</string>
+    <string name="antennapod_import">Import from AntennaPod</string>
+    <string name="antennapod_import_summary">The database export of AntennaPod (Settings → Import/Export)</string>
     <string name="opml_import">Import OPML</string>
     <string name="opml_import_summary">Take over subscriptions from another app</string>
     <string name="opml_export">Export OPML</string>

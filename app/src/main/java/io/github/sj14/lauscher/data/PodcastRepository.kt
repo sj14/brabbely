@@ -3,6 +3,7 @@ package io.github.sj14.lauscher.data
 import android.util.Log
 import androidx.room.withTransaction
 import io.github.sj14.lauscher.LOG_TAG
+import io.github.sj14.lauscher.data.backup.AntennaPodImport
 import io.github.sj14.lauscher.data.backup.Backup
 import io.github.sj14.lauscher.data.backup.BackupFormat
 import io.github.sj14.lauscher.data.backup.PodcastBackup
@@ -23,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -33,6 +35,8 @@ class PodcastRepository(
     private val http: OkHttpClient,
     private val settings: SettingsRepository,
     private val downloads: Downloads,
+    /** Directory for temporary files, such as an import that has to be copied first. */
+    private val tempDir: File,
 ) {
     private val podcastDao = db.podcastDao()
     private val episodeDao = db.episodeDao()
@@ -188,9 +192,23 @@ class PodcastRepository(
         BackupFormat.write(Backup(settings.export(), podcasts, queue), output)
     }
 
-    /** Subscribes to the podcasts of a backup and restores what was listened to and the settings. */
     suspend fun restoreBackup(input: InputStream): ImportResult = withContext(Dispatchers.IO) {
-        val backup = BackupFormat.read(input)
+        restore(BackupFormat.read(input))
+    }
+
+    /** Imports the database export of AntennaPod. SQLite needs a file, so the export is copied first. */
+    suspend fun importAntennaPod(input: InputStream): ImportResult = withContext(Dispatchers.IO) {
+        val databaseFile = File(tempDir, "antennapod-import.db")
+        try {
+            databaseFile.outputStream().use { input.copyTo(it) }
+            restore(AntennaPodImport.read(databaseFile))
+        } finally {
+            databaseFile.delete()
+        }
+    }
+
+    /** Subscribes to the podcasts of a backup and restores what was listened to and the settings. */
+    private suspend fun restore(backup: Backup): ImportResult {
         settings.import(backup.settings)
 
         var imported = 0
@@ -218,7 +236,7 @@ class PodcastRepository(
             episodeDao.clearQueue()
             queue.forEachIndexed { index, id -> episodeDao.setQueuePosition(id, index) }
         }
-        ImportResult(imported, failed)
+        return ImportResult(imported, failed)
     }
 
     private suspend fun restoreProgress(podcast: PodcastBackup, episodeIds: Map<String, Long>) = db.withTransaction {
@@ -250,7 +268,21 @@ class PodcastRepository(
         return inserted
     }
 
+    /** Some servers occasionally send broken data, so a network error is retried a few times. */
     private fun fetchFeed(url: String): ParsedFeed {
+        var attempt = 1
+        while (true) {
+            try {
+                return fetchFeedOnce(url)
+            } catch (e: IOException) {
+                if (attempt >= FEED_ATTEMPTS) throw e
+                Log.i(LOG_TAG, "Loading $url failed, trying again", e)
+                attempt++
+            }
+        }
+    }
+
+    private fun fetchFeedOnce(url: String): ParsedFeed {
         val request = Request.Builder().url(url).build()
         return http.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
@@ -284,6 +316,7 @@ class PodcastRepository(
     companion object {
         /** Episodes published within this time count as new. */
         private val NEW_EPISODE_WINDOW = TimeUnit.DAYS.toMillis(30)
+        private const val FEED_ATTEMPTS = 3
 
         private fun newSince() = System.currentTimeMillis() - NEW_EPISODE_WINDOW
     }

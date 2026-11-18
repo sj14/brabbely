@@ -23,6 +23,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import io.github.sj14.lauscher.LauscherApp
 import io.github.sj14.lauscher.MainActivity
 import io.github.sj14.lauscher.data.AppSettings
+import io.github.sj14.lauscher.data.SleepAutoMode
 import io.github.sj14.lauscher.data.db.EpisodeWithPodcast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +35,7 @@ import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
+import java.time.LocalTime
 
 // Media button preferences and the session callbacks are still marked unstable in Media3.
 @OptIn(UnstableApi::class)
@@ -146,6 +148,20 @@ class PlaybackService : MediaSessionService() {
         }
     }
 
+    private fun startSleepTimerIfAutomatic() {
+        if (container.sleepTimer.state.value != SleepTimerState.Off) return
+        val automatic = when (settings.sleepAutoMode) {
+            SleepAutoMode.OFF -> false
+            SleepAutoMode.ALWAYS -> true
+            SleepAutoMode.TIME_WINDOW -> {
+                val now = LocalTime.now()
+                val minuteOfDay = now.hour * 60 + now.minute
+                isInTimeWindow(minuteOfDay, settings.sleepAutoStartMinutes, settings.sleepAutoEndMinutes)
+            }
+        }
+        if (automatic) container.sleepTimer.start(settings.sleepTimerMinutes)
+    }
+
     private fun skipBy(milliseconds: Long) {
         val duration = player.duration.takeIf { it != C.TIME_UNSET } ?: Long.MAX_VALUE
         player.seekTo((player.currentPosition + milliseconds).coerceIn(0, duration))
@@ -181,8 +197,11 @@ class PlaybackService : MediaSessionService() {
 
     private inner class PlayerListener : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
-            // Playback resumed some other way, so a later volume change must not resume it again.
-            if (isPlaying) pausedByVolumeAt = null
+            if (isPlaying) {
+                // Playback resumed some other way, so a later volume change must not resume it again.
+                pausedByVolumeAt = null
+                startSleepTimerIfAutomatic()
+            }
             savePosition()
             positionSaver?.cancel()
             if (!isPlaying) return

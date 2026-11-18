@@ -1,6 +1,7 @@
 package io.github.sj14.lauscher.ui.screens
 
 import android.content.Intent
+import android.text.format.DateFormat
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -24,6 +25,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,18 +41,25 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.sj14.lauscher.BuildConfig
 import io.github.sj14.lauscher.LOG_TAG
 import io.github.sj14.lauscher.R
 import io.github.sj14.lauscher.data.PodcastRepository
 import io.github.sj14.lauscher.data.ShakeSensitivity
+import io.github.sj14.lauscher.data.SleepAutoMode
+import io.github.sj14.lauscher.playback.SLEEP_TIMER_MINUTES
 import io.github.sj14.lauscher.data.ThemeMode
 import io.github.sj14.lauscher.ui.LocalContainer
 import kotlinx.coroutines.launch
 import java.io.InputStream
 import java.io.OutputStream
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 private val SKIP_SECONDS = listOf(5, 10, 15, 30, 45, 60)
 private val REFRESH_HOURS = listOf(1, 3, 6, 12, 24)
@@ -117,6 +127,16 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
     val backupRestoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) runImport(uri, backupRestoreRunning, container.repository::restoreBackup)
     }
+    val antennaPodImportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) runImport(uri, backupRestoreRunning, container.repository::importAntennaPod)
+    }
+    val autoBackupFolderLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        // Keeps access to the folder after a restart, so the daily backup can write there.
+        val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        appContext.contentResolver.takePersistableUriPermission(uri, flags)
+        update { repo.setAutoBackupFolder(uri.toString()) }
+    }
     val backupCreateLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) runExport(uri, backupCreated, container.repository::createBackup)
     }
@@ -167,6 +187,40 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
             )
 
             Section(stringResource(R.string.sleep_timer))
+            ChoiceSetting(
+                title = stringResource(R.string.sleep_duration),
+                description = stringResource(R.string.sleep_duration_summary),
+                options = SLEEP_TIMER_MINUTES,
+                selected = settings.sleepTimerMinutes,
+                label = { pluralStringResource(R.plurals.minutes, it, it) },
+                onSelect = { update { repo.setSleepMinutes(it) } },
+            )
+            ChoiceSetting(
+                title = stringResource(R.string.sleep_auto),
+                description = stringResource(R.string.sleep_auto_summary),
+                options = SleepAutoMode.entries,
+                selected = settings.sleepAutoMode,
+                label = {
+                    when (it) {
+                        SleepAutoMode.OFF -> stringResource(R.string.off)
+                        SleepAutoMode.ALWAYS -> stringResource(R.string.sleep_auto_always)
+                        SleepAutoMode.TIME_WINDOW -> stringResource(R.string.sleep_auto_time_window)
+                    }
+                },
+                onSelect = { update { repo.setSleepAutoMode(it) } },
+            )
+            if (settings.sleepAutoMode == SleepAutoMode.TIME_WINDOW) {
+                TimeSetting(
+                    title = stringResource(R.string.sleep_auto_from),
+                    minuteOfDay = settings.sleepAutoStartMinutes,
+                    onSelect = { update { repo.setSleepAutoStart(it) } },
+                )
+                TimeSetting(
+                    title = stringResource(R.string.sleep_auto_until),
+                    minuteOfDay = settings.sleepAutoEndMinutes,
+                    onSelect = { update { repo.setSleepAutoEnd(it) } },
+                )
+            }
             ChoiceSetting(
                 title = stringResource(R.string.sleep_shake),
                 description = stringResource(R.string.sleep_shake_summary),
@@ -267,6 +321,23 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
             ClickSetting(stringResource(R.string.backup_restore), stringResource(R.string.backup_restore_summary)) {
                 backupRestoreLauncher.launch(arrayOf("*/*"))
             }
+            val backupFolder = settings.autoBackupFolder
+            ClickSetting(
+                stringResource(R.string.auto_backup),
+                if (backupFolder == null) stringResource(R.string.auto_backup_off) else folderName(backupFolder),
+            ) {
+                autoBackupFolderLauncher.launch(null)
+            }
+            if (backupFolder != null) {
+                ClickSetting(stringResource(R.string.auto_backup_disable)) {
+                    val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    appContext.contentResolver.releasePersistableUriPermission(backupFolder.toUri(), flags)
+                    update { repo.setAutoBackupFolder(null) }
+                }
+            }
+            ClickSetting(stringResource(R.string.antennapod_import), stringResource(R.string.antennapod_import_summary)) {
+                antennaPodImportLauncher.launch(arrayOf("*/*"))
+            }
             ClickSetting(stringResource(R.string.opml_import), stringResource(R.string.opml_import_summary)) {
                 opmlImportLauncher.launch(arrayOf("*/*"))
             }
@@ -280,6 +351,15 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
                 supportingContent = { Text(stringResource(R.string.version, BuildConfig.VERSION_NAME)) },
             )
         }
+    }
+}
+
+/** The display name of a folder chosen with the system file picker. */
+@Composable
+private fun folderName(treeUri: String): String {
+    val context = LocalContext.current
+    return remember(treeUri) {
+        DocumentFile.fromTreeUri(context, treeUri.toUri())?.name ?: treeUri
     }
 }
 
@@ -309,6 +389,38 @@ private fun ClickSetting(title: String, summary: String? = null, onClick: () -> 
         headlineContent = { Text(title) },
         supportingContent = summary?.let { { Text(it) } },
         modifier = Modifier.clickable(onClick = onClick),
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimeSetting(title: String, minuteOfDay: Int, onSelect: (Int) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    val time = LocalTime.of(minuteOfDay / 60, minuteOfDay % 60)
+    ListItem(
+        headlineContent = { Text(title) },
+        supportingContent = { Text(time.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))) },
+        modifier = Modifier.clickable { open = true },
+    )
+    if (!open) return
+    val state = rememberTimePickerState(
+        initialHour = time.hour,
+        initialMinute = time.minute,
+        is24Hour = DateFormat.is24HourFormat(LocalContext.current),
+    )
+    AlertDialog(
+        onDismissRequest = { open = false },
+        title = { Text(title) },
+        text = { TimePicker(state) },
+        confirmButton = {
+            TextButton(onClick = {
+                onSelect(state.hour * 60 + state.minute)
+                open = false
+            }) { Text(stringResource(R.string.ok)) }
+        },
+        dismissButton = {
+            TextButton(onClick = { open = false }) { Text(stringResource(R.string.cancel)) }
+        },
     )
 }
 

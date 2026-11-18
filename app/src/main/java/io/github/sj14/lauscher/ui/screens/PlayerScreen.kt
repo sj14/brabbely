@@ -80,6 +80,7 @@ import coil3.toBitmap
 import io.github.sj14.lauscher.R
 import io.github.sj14.lauscher.data.ShakeSensitivity
 import io.github.sj14.lauscher.data.db.Chapter
+import io.github.sj14.lauscher.playback.SLEEP_TIMER_MINUTES
 import io.github.sj14.lauscher.playback.SleepTimerState
 import io.github.sj14.lauscher.ui.LocalContainer
 import io.github.sj14.lauscher.ui.components.Artwork
@@ -93,7 +94,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private val SPEEDS = listOf(0.75f, 1.0f, 1.1f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f, 3.0f)
-private val SLEEP_MINUTES = listOf(5, 10, 15, 30, 45, 60, 90)
 
 private enum class PlayerSheet { SPEED, SLEEP, CHAPTERS }
 
@@ -356,7 +356,7 @@ private fun SleepSheet(state: SleepTimerState, onDone: () -> Unit) {
         )
     }
     LazyColumn {
-        items(SLEEP_MINUTES) { minutes ->
+        items(SLEEP_TIMER_MINUTES) { minutes ->
             SheetOption(pluralStringResource(R.plurals.minutes, minutes, minutes), selected = false) {
                 timer.start(minutes)
                 scope.launch { container.settings.setSleepMinutes(minutes) }
