@@ -42,10 +42,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.sj14.lauscher.BuildConfig
 import io.github.sj14.lauscher.LOG_TAG
 import io.github.sj14.lauscher.R
+import io.github.sj14.lauscher.data.PodcastRepository
 import io.github.sj14.lauscher.data.ShakeSensitivity
 import io.github.sj14.lauscher.data.ThemeMode
 import io.github.sj14.lauscher.ui.LocalContainer
 import kotlinx.coroutines.launch
+import java.io.InputStream
+import java.io.OutputStream
+import java.time.LocalDate
 
 private val SKIP_SECONDS = listOf(5, 10, 15, 30, 45, 60)
 private val REFRESH_HOURS = listOf(1, 3, 6, 12, 24)
@@ -65,41 +69,56 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
         scope.launch { action() }
     }
 
-    val exportDone = stringResource(R.string.opml_exported)
     val failed = stringResource(R.string.error_loading)
-    val importRunning = stringResource(R.string.opml_import_running)
-    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
-        val appContext = context.applicationContext
-        Toast.makeText(appContext, importRunning, Toast.LENGTH_LONG).show()
-        // Importing many feeds takes a while; the app scope keeps it running when the user leaves the screen.
+    val appContext = context.applicationContext
+
+    // Importing many feeds takes a while; the app scope keeps it running when the user leaves the screen.
+    fun runImport(uri: Uri, runningMessage: String, import: suspend (InputStream) -> PodcastRepository.ImportResult) {
+        Toast.makeText(appContext, runningMessage, Toast.LENGTH_LONG).show()
         container.appScope.launch {
             val message = try {
-                val result = appContext.contentResolver.openInputStream(uri)!!.use { container.repository.importOpml(it) }
-                var text = resources.getQuantityString(R.plurals.opml_imported, result.imported, result.imported)
+                val result = appContext.contentResolver.openInputStream(uri)!!.use { import(it) }
+                var text = resources.getQuantityString(R.plurals.import_result, result.imported, result.imported)
                 if (result.failed > 0) {
-                    text += "\n" + resources.getQuantityString(R.plurals.opml_failed, result.failed, result.failed)
+                    text += "\n" + resources.getQuantityString(R.plurals.import_failed_feeds, result.failed, result.failed)
                 }
                 text
             } catch (e: Exception) {
-                Log.w(LOG_TAG, "Reading OPML file failed", e)
+                Log.w(LOG_TAG, "Importing $uri failed", e)
                 failed
             }
             Toast.makeText(appContext, message, Toast.LENGTH_LONG).show()
         }
     }
-    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/x-opml")) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
+
+    fun runExport(uri: Uri, doneMessage: String, export: suspend (OutputStream) -> Unit) {
         scope.launch {
             val message = try {
-                context.contentResolver.openOutputStream(uri)!!.use { container.repository.exportOpml(it) }
-                exportDone
+                appContext.contentResolver.openOutputStream(uri)!!.use { export(it) }
+                doneMessage
             } catch (e: Exception) {
-                Log.w(LOG_TAG, "Writing OPML file failed", e)
+                Log.w(LOG_TAG, "Exporting to $uri failed", e)
                 failed
             }
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            Toast.makeText(appContext, message, Toast.LENGTH_LONG).show()
         }
+    }
+
+    val opmlImportRunning = stringResource(R.string.opml_import_running)
+    val opmlExported = stringResource(R.string.opml_exported)
+    val backupRestoreRunning = stringResource(R.string.backup_restore_running)
+    val backupCreated = stringResource(R.string.backup_created)
+    val opmlImportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) runImport(uri, opmlImportRunning, container.repository::importOpml)
+    }
+    val opmlExportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/x-opml")) { uri ->
+        if (uri != null) runExport(uri, opmlExported, container.repository::exportOpml)
+    }
+    val backupRestoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) runImport(uri, backupRestoreRunning, container.repository::restoreBackup)
+    }
+    val backupCreateLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) runExport(uri, backupCreated, container.repository::createBackup)
     }
 
     Scaffold(
@@ -163,6 +182,14 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
                 },
                 onSelect = { update { repo.setSleepShake(it) } },
             )
+            if (settings.sleepShakeSensitivity != ShakeSensitivity.OFF) {
+                SwitchSetting(
+                    title = stringResource(R.string.sleep_shake_vibrate),
+                    summary = stringResource(R.string.sleep_shake_vibrate_summary),
+                    checked = settings.sleepShakeVibrate,
+                    onChange = { update { repo.setSleepShakeVibrate(it) } },
+                )
+            }
             SwitchSetting(
                 title = stringResource(R.string.sleep_volume_reset),
                 summary = stringResource(R.string.sleep_volume_reset_summary),
@@ -234,11 +261,17 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
             }
 
             Section(stringResource(R.string.section_subscriptions))
+            ClickSetting(stringResource(R.string.backup_create), stringResource(R.string.backup_create_summary)) {
+                backupCreateLauncher.launch("lauscher-backup-${LocalDate.now()}.json")
+            }
+            ClickSetting(stringResource(R.string.backup_restore), stringResource(R.string.backup_restore_summary)) {
+                backupRestoreLauncher.launch(arrayOf("*/*"))
+            }
             ClickSetting(stringResource(R.string.opml_import), stringResource(R.string.opml_import_summary)) {
-                importLauncher.launch(arrayOf("*/*"))
+                opmlImportLauncher.launch(arrayOf("*/*"))
             }
             ClickSetting(stringResource(R.string.opml_export)) {
-                exportLauncher.launch("lauscher.opml")
+                opmlExportLauncher.launch("lauscher.opml")
             }
 
             Section(stringResource(R.string.section_about))

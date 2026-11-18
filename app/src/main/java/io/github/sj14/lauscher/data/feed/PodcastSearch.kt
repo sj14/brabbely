@@ -40,6 +40,7 @@ class PodcastSearch(private val http: OkHttpClient) {
                 imageUrl = item.optString("artworkUrl600").ifEmpty { null },
             )
         }
-        return podcasts
+        // iTunes sometimes lists the same feed more than once.
+        return podcasts.distinctBy { it.feedUrl }
     }
 }

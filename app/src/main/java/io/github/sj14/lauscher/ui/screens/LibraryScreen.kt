@@ -1,6 +1,6 @@
 package io.github.sj14.lauscher.ui.screens
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Badge
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -45,6 +46,8 @@ import io.github.sj14.lauscher.data.db.PodcastWithCounts
 import io.github.sj14.lauscher.ui.LocalContainer
 import io.github.sj14.lauscher.ui.components.Artwork
 import io.github.sj14.lauscher.ui.components.EmptyState
+import io.github.sj14.lauscher.ui.components.MenuItem
+import io.github.sj14.lauscher.ui.components.UnsubscribeDialog
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -113,9 +116,20 @@ fun LibraryScreen(
     }
 }
 
+/** A long press opens the podcast's actions. */
 @Composable
 private fun PodcastTile(item: PodcastWithCounts, onClick: () -> Unit) {
-    Column(Modifier.clickable(onClick = onClick)) {
+    val repository = LocalContainer.current.repository
+    val scope = rememberCoroutineScope()
+    var menuOpen by remember { mutableStateOf(false) }
+    var confirmUnsubscribe by remember { mutableStateOf(false) }
+
+    fun run(action: suspend () -> Unit) {
+        menuOpen = false
+        scope.launch { action() }
+    }
+
+    Column(Modifier.combinedClickable(onClick = onClick, onLongClick = { menuOpen = true })) {
         Box {
             Artwork(item.podcast.imageUrl, Modifier.fillMaxWidth(), cornerRadius = 16.dp)
             if (item.unplayedCount > 0) {
@@ -127,6 +141,14 @@ private fun PodcastTile(item: PodcastWithCounts, onClick: () -> Unit) {
                 ) {
                     Text(item.unplayedCount.toString(), modifier = Modifier.padding(horizontal = 2.dp))
                 }
+            }
+        }
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            MenuItem(R.string.refresh) { run { repository.refresh(item.podcast) } }
+            MenuItem(R.string.mark_all_played) { run { repository.markAllPlayed(item.podcast.id) } }
+            MenuItem(R.string.unsubscribe) {
+                menuOpen = false
+                confirmUnsubscribe = true
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -145,5 +167,15 @@ private fun PodcastTile(item: PodcastWithCounts, onClick: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
             )
         }
+    }
+
+    if (confirmUnsubscribe) {
+        UnsubscribeDialog(
+            onConfirm = {
+                confirmUnsubscribe = false
+                scope.launch { repository.unsubscribe(item.podcast.id) }
+            },
+            onDismiss = { confirmUnsubscribe = false },
+        )
     }
 }

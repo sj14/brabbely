@@ -88,6 +88,15 @@ interface EpisodeDao {
     @Query("SELECT * FROM episodes WHERE lastPlayedAt > 0 ORDER BY lastPlayedAt DESC LIMIT 1")
     suspend fun getLastPlayed(): EpisodeWithPodcast?
 
+    @Query("SELECT id, guid FROM episodes WHERE podcastId = :podcastId")
+    suspend fun getKeys(podcastId: Long): List<EpisodeKey>
+
+    @Query("SELECT guid, played, position FROM episodes WHERE podcastId = :podcastId AND (played = 1 OR position > 0)")
+    suspend fun getProgress(podcastId: Long): List<EpisodeProgress>
+
+    @Query("UPDATE episodes SET queuePosition = NULL")
+    suspend fun clearQueue()
+
     @Query("SELECT guid FROM episodes WHERE podcastId = :podcastId")
     suspend fun getGuids(podcastId: Long): List<String>
 

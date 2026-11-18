@@ -89,6 +89,12 @@ data class EpisodeWithPodcast(
     val imageUrl: String? get() = episode.imageUrl ?: podcast.imageUrl
 }
 
+/** The columns that identify an episode within its podcast. */
+data class EpisodeKey(val id: Long, val guid: String)
+
+/** The listening progress of an episode, for the backup. */
+data class EpisodeProgress(val guid: String, val played: Boolean, val position: Long)
+
 /** A podcast with the number of episodes not yet played, for the library grid. */
 data class PodcastWithCounts(
     @Embedded val podcast: Podcast,

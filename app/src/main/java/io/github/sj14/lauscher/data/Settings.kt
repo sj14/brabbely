@@ -30,12 +30,13 @@ data class AppSettings(
     val skipSilence: Boolean = false,
     val continueWithQueue: Boolean = true,
     val pauseOnZeroVolume: Boolean = true,
-    val autoDownload: Boolean = true,
+    val autoDownload: Boolean = false,
     val wifiOnly: Boolean = true,
     val deletePlayed: Boolean = true,
     val refreshIntervalHours: Int = 6,
     val sleepTimerMinutes: Int = 30,
     val sleepShakeSensitivity: ShakeSensitivity = ShakeSensitivity.MEDIUM,
+    val sleepShakeVibrate: Boolean = true,
     val sleepVolumeReset: Boolean = true,
     /** How long the volume fades out before the sleep timer pauses, 0 for no fade-out. */
     val sleepFadeSeconds: Int = 15,
@@ -63,6 +64,7 @@ class SettingsRepository(context: Context) {
         val sleepMinutes = intPreferencesKey("sleep_minutes")
         val sleepShake = stringPreferencesKey("sleep_shake_sensitivity")
         val sleepFade = intPreferencesKey("sleep_fade_seconds")
+        val sleepShakeVibrate = booleanPreferencesKey("sleep_shake_vibrate")
         val themeMode = stringPreferencesKey("theme_mode")
         val dynamicColor = booleanPreferencesKey("dynamic_color")
     }
@@ -85,12 +87,28 @@ class SettingsRepository(context: Context) {
             sleepShakeSensitivity = prefs[Keys.sleepShake]?.let { ShakeSensitivity.valueOf(it) }
                 ?: defaults.sleepShakeSensitivity,
             sleepFadeSeconds = prefs[Keys.sleepFade] ?: defaults.sleepFadeSeconds,
+            sleepShakeVibrate = prefs[Keys.sleepShakeVibrate] ?: defaults.sleepShakeVibrate,
             themeMode = prefs[Keys.themeMode]?.let { ThemeMode.valueOf(it) } ?: defaults.themeMode,
             dynamicColor = prefs[Keys.dynamicColor] ?: defaults.dynamicColor,
         )
     }
 
     suspend fun current(): AppSettings = settings.first()
+
+    /** All stored settings by key, for the backup. Settings left at their default are not included. */
+    suspend fun export(): Map<String, Any> = store.data.first().asMap().mapKeys { it.key.name }
+
+    /** Writes back settings from a backup. */
+    suspend fun import(values: Map<String, Any>) = store.edit { prefs ->
+        for ((name, value) in values) {
+            when (value) {
+                is Boolean -> prefs[booleanPreferencesKey(name)] = value
+                is Int -> prefs[intPreferencesKey(name)] = value
+                is Float -> prefs[floatPreferencesKey(name)] = value
+                is String -> prefs[stringPreferencesKey(name)] = value
+            }
+        }
+    }
 
     suspend fun setSkipBack(seconds: Int) = store.edit { it[Keys.skipBack] = seconds }
     suspend fun setSkipForward(seconds: Int) = store.edit { it[Keys.skipForward] = seconds }
@@ -105,6 +123,7 @@ class SettingsRepository(context: Context) {
     suspend fun setRefreshInterval(hours: Int) = store.edit { it[Keys.refreshInterval] = hours }
     suspend fun setSleepMinutes(minutes: Int) = store.edit { it[Keys.sleepMinutes] = minutes }
     suspend fun setSleepShake(sensitivity: ShakeSensitivity) = store.edit { it[Keys.sleepShake] = sensitivity.name }
+    suspend fun setSleepShakeVibrate(enabled: Boolean) = store.edit { it[Keys.sleepShakeVibrate] = enabled }
     suspend fun setSleepFade(seconds: Int) = store.edit { it[Keys.sleepFade] = seconds }
     suspend fun setThemeMode(mode: ThemeMode) = store.edit { it[Keys.themeMode] = mode.name }
     suspend fun setDynamicColor(enabled: Boolean) = store.edit { it[Keys.dynamicColor] = enabled }

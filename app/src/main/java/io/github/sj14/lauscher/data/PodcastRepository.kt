@@ -3,6 +3,10 @@ package io.github.sj14.lauscher.data
 import android.util.Log
 import androidx.room.withTransaction
 import io.github.sj14.lauscher.LOG_TAG
+import io.github.sj14.lauscher.data.backup.Backup
+import io.github.sj14.lauscher.data.backup.BackupFormat
+import io.github.sj14.lauscher.data.backup.PodcastBackup
+import io.github.sj14.lauscher.data.backup.QueueEntry
 import io.github.sj14.lauscher.data.db.AppDatabase
 import io.github.sj14.lauscher.data.db.Chapter
 import io.github.sj14.lauscher.data.db.Episode
@@ -164,6 +168,68 @@ class PodcastRepository(
             }
         }
         ImportResult(imported, failed)
+    }
+
+    suspend fun createBackup(output: OutputStream) = withContext(Dispatchers.IO) {
+        val subscribed = podcastDao.getSubscribed()
+        val podcasts = subscribed.map { podcast ->
+            val progress = episodeDao.getProgress(podcast.id)
+            PodcastBackup(
+                feedUrl = podcast.feedUrl,
+                title = podcast.title,
+                playedGuids = progress.filter { it.played }.map { it.guid },
+                positions = progress.filter { !it.played }.associate { it.guid to it.position },
+            )
+        }
+        val feedUrls = subscribed.associate { it.id to it.feedUrl }
+        val queue = episodeDao.getQueue().mapNotNull { episode ->
+            feedUrls[episode.podcastId]?.let { QueueEntry(it, episode.guid) }
+        }
+        BackupFormat.write(Backup(settings.export(), podcasts, queue), output)
+    }
+
+    /** Subscribes to the podcasts of a backup and restores what was listened to and the settings. */
+    suspend fun restoreBackup(input: InputStream): ImportResult = withContext(Dispatchers.IO) {
+        val backup = BackupFormat.read(input)
+        settings.import(backup.settings)
+
+        var imported = 0
+        var failed = 0
+        // Episode ids by feed URL and GUID, to rebuild the queue at the end.
+        val episodeIds = mutableMapOf<String, Map<String, Long>>()
+        for (podcast in backup.podcasts) {
+            try {
+                val podcastId = preview(podcast.feedUrl)
+                subscribe(podcastId)
+                val ids = episodeDao.getKeys(podcastId).associate { it.guid to it.id }
+                restoreProgress(podcast, ids)
+                episodeIds[podcast.feedUrl] = ids
+                imported++
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(LOG_TAG, "Restoring ${podcast.feedUrl} failed", e)
+                failed++
+            }
+        }
+
+        val queue = backup.queue.mapNotNull { episodeIds[it.feedUrl]?.get(it.guid) }
+        db.withTransaction {
+            episodeDao.clearQueue()
+            queue.forEachIndexed { index, id -> episodeDao.setQueuePosition(id, index) }
+        }
+        ImportResult(imported, failed)
+    }
+
+    private suspend fun restoreProgress(podcast: PodcastBackup, episodeIds: Map<String, Long>) = db.withTransaction {
+        for (guid in podcast.playedGuids) {
+            val id = episodeIds[guid] ?: continue
+            episodeDao.setPlayed(id, true)
+        }
+        for ((guid, position) in podcast.positions) {
+            val id = episodeIds[guid] ?: continue
+            episodeDao.setPosition(id, position, playedAt = 0)
+        }
     }
 
     suspend fun exportOpml(output: OutputStream) = withContext(Dispatchers.IO) {

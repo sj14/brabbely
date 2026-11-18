@@ -4,7 +4,6 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,21 +17,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.DoneAll
-import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -54,6 +46,7 @@ import io.github.sj14.lauscher.ui.LocalContainer
 import io.github.sj14.lauscher.ui.components.Artwork
 import io.github.sj14.lauscher.ui.components.EpisodeRow
 import io.github.sj14.lauscher.ui.components.HtmlText
+import io.github.sj14.lauscher.ui.components.UnsubscribeDialog
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,7 +59,6 @@ fun PodcastScreen(podcastId: Long, onBack: () -> Unit, onOpenEpisode: (Long) -> 
     val podcast by podcastFlow.collectAsStateWithLifecycle(null)
     val episodes by episodesFlow.collectAsStateWithLifecycle(emptyList())
     val scope = rememberCoroutineScope()
-    var menuOpen by remember { mutableStateOf(false) }
     var confirmUnsubscribe by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -74,23 +66,6 @@ fun PodcastScreen(podcastId: Long, onBack: () -> Unit, onOpenEpisode: (Long) -> 
             TopAppBar(
                 title = {},
                 navigationIcon = { BackButton(onBack) },
-                actions = {
-                    Box {
-                        IconButton(onClick = { menuOpen = true }) {
-                            Icon(Icons.Rounded.MoreVert, stringResource(R.string.more))
-                        }
-                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.mark_all_played)) },
-                                leadingIcon = { Icon(Icons.Rounded.DoneAll, null) },
-                                onClick = {
-                                    menuOpen = false
-                                    scope.launch { repository.markAllPlayed(podcastId) }
-                                },
-                            )
-                        }
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 ),
@@ -126,22 +101,15 @@ fun PodcastScreen(podcastId: Long, onBack: () -> Unit, onOpenEpisode: (Long) -> 
     }
 
     if (confirmUnsubscribe) {
-        AlertDialog(
-            onDismissRequest = { confirmUnsubscribe = false },
-            title = { Text(stringResource(R.string.unsubscribe_title)) },
-            text = { Text(stringResource(R.string.unsubscribe_text)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirmUnsubscribe = false
-                    scope.launch {
-                        repository.unsubscribe(podcastId)
-                        onBack()
-                    }
-                }) { Text(stringResource(R.string.unsubscribe)) }
+        UnsubscribeDialog(
+            onConfirm = {
+                confirmUnsubscribe = false
+                scope.launch {
+                    repository.unsubscribe(podcastId)
+                    onBack()
+                }
             },
-            dismissButton = {
-                TextButton(onClick = { confirmUnsubscribe = false }) { Text(stringResource(R.string.cancel)) }
-            },
+            onDismiss = { confirmUnsubscribe = false },
         )
     }
 }

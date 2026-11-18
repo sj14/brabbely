@@ -41,6 +41,7 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
     private var countdownJob: Job? = null
     /** Acceleration in g that counts as a shake, null if shaking does nothing. */
     private var shakeThresholdG: Float? = null
+    private var vibrateOnShake = true
     private var fadeOutMs = 0L
 
     private val sensorManager = context.getSystemService(SensorManager::class.java)
@@ -56,8 +57,9 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
         player = null
     }
 
-    fun configure(shakeThresholdG: Float?, fadeOutMs: Long) {
+    fun configure(shakeThresholdG: Float?, vibrateOnShake: Boolean, fadeOutMs: Long) {
         this.shakeThresholdG = shakeThresholdG
+        this.vibrateOnShake = vibrateOnShake
         this.fadeOutMs = fadeOutMs
         if (_state.value is SleepTimerState.Countdown) {
             if (shakeThresholdG != null) startShakeDetection() else stopShakeDetection()
@@ -150,7 +152,7 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
                 if (gForce > threshold && now - lastShake > SHAKE_DEBOUNCE_MS) {
                     lastShake = now
                     reset()
-                    vibrate()
+                    if (vibrateOnShake) vibrate()
                 }
             }
 
