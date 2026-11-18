@@ -26,9 +26,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,8 +35,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.sj14.lauscher.LOG_TAG
 import io.github.sj14.lauscher.R
+import io.github.sj14.lauscher.data.PodcastRepository
+import io.github.sj14.lauscher.data.feed.PodcastSearch
 import io.github.sj14.lauscher.data.feed.SearchResult
 import io.github.sj14.lauscher.ui.LocalContainer
 import io.github.sj14.lauscher.ui.components.Artwork
@@ -48,61 +51,84 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** Finds podcasts by name, or opens a feed directly when a URL is entered. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SearchScreen(onOpenPodcast: (Long) -> Unit) {
-    val container = LocalContainer.current
-    val scope = rememberCoroutineScope()
-    var query by rememberSaveable { mutableStateOf("") }
-    var results by remember { mutableStateOf<List<SearchResult>?>(null) }
-    var loading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    val errorText = stringResource(R.string.error_loading)
+/**
+ * Holds the search across navigation, so the results are still there when the user comes back
+ * from a podcast they opened.
+ */
+class SearchViewModel(
+    private val search: PodcastSearch,
+    private val repository: PodcastRepository,
+) : ViewModel() {
+    var query by mutableStateOf("")
+    var results by mutableStateOf<List<SearchResult>?>(null)
+        private set
+    var loading by mutableStateOf(false)
+        private set
+    var failed by mutableStateOf(false)
+        private set
 
-    fun open(feedUrl: String) {
-        scope.launch {
+    fun search() {
+        val text = query.trim()
+        if (text.isEmpty()) return
+        viewModelScope.launch {
             loading = true
-            error = null
+            failed = false
             try {
-                onOpenPodcast(container.repository.preview(feedUrl))
+                results = withContext(Dispatchers.IO) { search.search(text) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.w(LOG_TAG, "Loading $feedUrl failed", e)
-                error = errorText
+                Log.w(LOG_TAG, "Searching for $text failed", e)
+                failed = true
             }
             loading = false
         }
     }
 
+    /** Loads the feed for a preview and returns the podcast id, or null if it could not be loaded. */
+    suspend fun open(feedUrl: String): Long? {
+        loading = true
+        failed = false
+        try {
+            return repository.preview(feedUrl)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(LOG_TAG, "Loading $feedUrl failed", e)
+            failed = true
+            return null
+        } finally {
+            loading = false
+        }
+    }
+}
+
+/** Finds podcasts by name, or opens a feed directly when a URL is entered. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchScreen(onOpenPodcast: (Long) -> Unit) {
+    val container = LocalContainer.current
+    val model = viewModel { SearchViewModel(container.search, container.repository) }
+    val scope = rememberCoroutineScope()
+
+    fun open(feedUrl: String) {
+        scope.launch { model.open(feedUrl)?.let(onOpenPodcast) }
+    }
+
     fun submit() {
-        val text = query.trim()
-        if (text.isEmpty()) return
+        val text = model.query.trim()
         if (text.startsWith("http://") || text.startsWith("https://")) {
             open(text)
-            return
-        }
-        scope.launch {
-            loading = true
-            error = null
-            try {
-                results = withContext(Dispatchers.IO) { container.search.search(text) }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.w(LOG_TAG, "Searching for $text failed", e)
-                error = errorText
-            }
-            loading = false
+        } else {
+            model.search()
         }
     }
 
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.discover)) }) }) { padding ->
         Column(Modifier.padding(padding)) {
             OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
+                value = model.query,
+                onValueChange = { model.query = it },
                 placeholder = { Text(stringResource(R.string.search_hint)) },
                 leadingIcon = { Icon(Icons.Rounded.Search, null) },
                 singleLine = true,
@@ -114,10 +140,10 @@ fun SearchScreen(onOpenPodcast: (Long) -> Unit) {
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             )
             Box(Modifier.fillMaxSize()) {
-                val list = results
+                val list = model.results
                 when {
-                    loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                    error != null -> EmptyState(error.orEmpty())
+                    model.loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                    model.failed -> EmptyState(stringResource(R.string.error_loading))
                     list == null -> EmptyState(stringResource(R.string.search_intro), Icons.Rounded.Search)
                     list.isEmpty() -> EmptyState(stringResource(R.string.search_no_results), Icons.Rounded.Search)
                     else -> LazyColumn {
