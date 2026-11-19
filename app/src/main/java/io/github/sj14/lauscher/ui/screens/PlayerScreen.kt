@@ -3,6 +3,7 @@ package io.github.sj14.lauscher.ui.screens
 import android.content.pm.ActivityInfo
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,6 +46,8 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderColors
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -58,19 +61,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -96,6 +100,8 @@ import io.github.sj14.lauscher.ui.formatTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+private val CHAPTER_MARK_RADIUS = 1.5.dp
 
 private val SPEEDS = listOf(0.75f, 1.0f, 1.1f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f, 3.0f)
 
@@ -197,7 +203,7 @@ fun PlayerScreen(onClose: () -> Unit, onShowEpisode: (Long) -> Unit) {
                 modifier = Modifier.height(20.dp),
             )
 
-            SeekBar(position, state.durationMs, onSeek = connection::seekTo)
+            SeekBar(position, state.durationMs, chapters.map { it.startMs }, onSeek = connection::seekTo)
 
             Row(
                 Modifier.fillMaxWidth(),
@@ -267,10 +273,13 @@ fun PlayerScreen(onClose: () -> Unit, onShowEpisode: (Long) -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SeekBar(position: Long, duration: Long, onSeek: (Long) -> Unit) {
+private fun SeekBar(position: Long, duration: Long, chapterStarts: List<Long>, onSeek: (Long) -> Unit) {
     var dragPosition by remember { mutableStateOf<Float?>(null) }
     val shown = dragPosition?.toLong() ?: position
+    val enabled = duration > 0
+    val colors = SliderDefaults.colors()
     Column(Modifier.fillMaxWidth()) {
         Slider(
             value = shown.toFloat().coerceIn(0f, duration.toFloat().coerceAtLeast(1f)),
@@ -280,12 +289,44 @@ private fun SeekBar(position: Long, duration: Long, onSeek: (Long) -> Unit) {
                 dragPosition = null
             },
             valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
-            enabled = duration > 0,
+            enabled = enabled,
+            colors = colors,
+            track = { sliderState ->
+                Box {
+                    // Without the dot at the end, which would look like one more chapter mark.
+                    SliderDefaults.Track(
+                        sliderState = sliderState,
+                        enabled = enabled,
+                        colors = colors,
+                        drawStopIndicator = null,
+                    )
+                    ChapterMarks(chapterStarts, duration, position = sliderState.value, colors = colors)
+                }
+            },
         )
         Row(Modifier.fillMaxWidth()) {
             Text(formatTime(shown), style = MaterialTheme.typography.labelMedium)
             Spacer(Modifier.weight(1f))
             Text("-" + formatTime(duration - shown), style = MaterialTheme.typography.labelMedium)
+        }
+    }
+}
+
+/**
+ * Small dots on the track where a chapter starts. The track of the slider spans from the thumb's
+ * leftmost to its rightmost centre, so a fraction of its width is the same fraction of the episode.
+ */
+@Composable
+private fun BoxScope.ChapterMarks(starts: List<Long>, duration: Long, position: Float, colors: SliderColors) {
+    if (duration <= 0) return
+    Canvas(Modifier.matchParentSize()) {
+        val radius = CHAPTER_MARK_RADIUS.toPx()
+        for (start in starts) {
+            // The first chapter starts with the episode and needs no mark.
+            if (start <= 0 || start >= duration) continue
+            val x = size.width * start / duration
+            val color = if (start <= position) colors.activeTickColor else colors.inactiveTickColor
+            drawCircle(color, radius, Offset(x, center.y))
         }
     }
 }
