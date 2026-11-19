@@ -140,7 +140,7 @@ class PodcastRepository(
         if (chapters.isEmpty()) {
             chapters = ShowNotesChapters.parse(showNotesDao.get(episode.id).orEmpty())
         }
-        chapterDao.insertAll(chapters.map { Chapter(episode.id, it.startMs, it.title) })
+        chapterDao.insertAll(chapters.map { Chapter(episode.id, it.startMs, it.title, it.imageUrl) })
     }
 
     /** The chapters in a Podcasting 2.0 chapter file, null if it could not be loaded. */
@@ -310,7 +310,7 @@ class PodcastRepository(
             inserted += episodes[index].copy(id = id)
             val description = parsed[index].description
             if (description.isNotEmpty()) showNotes += ShowNotes(id, description)
-            val chapters = parsed[index].chapters.map { Chapter(id, it.startMs, it.title) }
+            val chapters = parsed[index].chapters.map { Chapter(id, it.startMs, it.title, it.imageUrl) }
             if (chapters.isNotEmpty()) chapterDao.insertAll(chapters)
         }
         showNotesDao.insertAll(showNotes)

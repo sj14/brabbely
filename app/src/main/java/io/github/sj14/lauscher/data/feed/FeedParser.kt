@@ -7,7 +7,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-data class ParsedChapter(val startMs: Long, val title: String)
+data class ParsedChapter(val startMs: Long, val title: String, val imageUrl: String? = null)
 
 data class ParsedEpisode(
     val guid: String,
@@ -117,10 +117,13 @@ object FeedParser {
                 }
                 ns == NS_ITUNES && parser.name == "duration" -> duration = parseDuration(parser.readText())
                 ns == NS_ITUNES && parser.name == "image" -> imageUrl = parser.getAttributeValue(null, "href")
-                ns == NS_PODCAST && parser.name == "chapters" -> chaptersUrl = parser.getAttributeValue(null, "url")
+                // The standard attribute is url; Podigee writes href instead.
+                ns == NS_PODCAST && parser.name == "chapters" ->
+                    chaptersUrl = parser.getAttributeValue(null, "url") ?: parser.getAttributeValue(null, "href")
                 ns == NS_PSC && parser.name == "chapter" -> {
                     val start = parseDuration(parser.getAttributeValue(null, "start").orEmpty())
-                    chapters += ParsedChapter(start, parser.getAttributeValue(null, "title").orEmpty())
+                    val title = parser.getAttributeValue(null, "title").orEmpty()
+                    chapters += ParsedChapter(start, title, imageUrl = parser.getAttributeValue(null, "image"))
                 }
             }
         }

@@ -102,6 +102,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private val CHAPTER_MARK_RADIUS = 1.5.dp
+private val CHAPTER_MARK_MIN_GAP = 6.dp
 
 private val SPEEDS = listOf(0.75f, 1.0f, 1.1f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f, 3.0f)
 
@@ -123,6 +124,7 @@ fun PlayerScreen(onClose: () -> Unit, onShowEpisode: (Long) -> Unit) {
     val chaptersFlow = remember(episodeId) { container.repository.observeChapters(episodeId ?: -1) }
     val chapters by chaptersFlow.collectAsStateWithLifecycle(emptyList())
     val position by rememberPlaybackPosition()
+    val currentChapter = chapters.lastOrNull { it.startMs <= position }
 
     var sheet by remember { mutableStateOf<PlayerSheet?>(null) }
     var fullscreen by remember { mutableStateOf(false) }
@@ -167,13 +169,14 @@ fun PlayerScreen(onClose: () -> Unit, onShowEpisode: (Long) -> Unit) {
                     }
                 }
             } else {
+                // A chapter with an image of its own shows it instead of the cover while it plays.
                 Artwork(
-                    item?.imageUrl,
+                    currentChapter?.imageUrl ?: item?.imageUrl,
                     Modifier
                         .fillMaxWidth(0.85f)
                         .shadow(24.dp, RoundedCornerShape(24.dp)),
                     cornerRadius = 24.dp,
-                    fallbackUrl = item?.podcast?.imageUrl,
+                    fallbackUrl = item?.imageUrl,
                 )
             }
             Spacer(Modifier.weight(0.5f))
@@ -193,7 +196,6 @@ fun PlayerScreen(onClose: () -> Unit, onShowEpisode: (Long) -> Unit) {
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
             )
-            val currentChapter = chapters.lastOrNull { it.startMs <= position }
             Text(
                 currentChapter?.title.orEmpty(),
                 style = MaterialTheme.typography.bodySmall,
@@ -264,7 +266,7 @@ fun PlayerScreen(onClose: () -> Unit, onShowEpisode: (Long) -> Unit) {
                     sheet = null
                 }
                 PlayerSheet.SLEEP -> SleepSheet(sleepState) { sheet = null }
-                PlayerSheet.CHAPTERS -> ChapterSheet(chapters, position) { chapter ->
+                PlayerSheet.CHAPTERS -> ChapterSheet(chapters, position, item?.imageUrl) { chapter ->
                     connection.seekTo(chapter.startMs)
                     sheet = null
                 }
@@ -315,16 +317,22 @@ private fun SeekBar(position: Long, duration: Long, chapterStarts: List<Long>, o
 /**
  * Small dots on the track where a chapter starts. The track of the slider spans from the thumb's
  * leftmost to its rightmost centre, so a fraction of its width is the same fraction of the episode.
+ * A mark too close to the previous one is left out, so many short chapters do not run together
+ * into a line; the list of chapters still has them all.
  */
 @Composable
 private fun BoxScope.ChapterMarks(starts: List<Long>, duration: Long, position: Float, colors: SliderColors) {
     if (duration <= 0) return
     Canvas(Modifier.matchParentSize()) {
         val radius = CHAPTER_MARK_RADIUS.toPx()
+        val minGap = CHAPTER_MARK_MIN_GAP.toPx()
+        var lastX = Float.NEGATIVE_INFINITY
         for (start in starts) {
             // The first chapter starts with the episode and needs no mark.
             if (start <= 0 || start >= duration) continue
             val x = size.width * start / duration
+            if (x - lastX < minGap) continue
+            lastX = x
             val color = if (start <= position) colors.activeTickColor else colors.inactiveTickColor
             drawCircle(color, radius, Offset(x, center.y))
         }
@@ -430,14 +438,34 @@ private fun SleepSheet(state: SleepTimerState, onDone: () -> Unit) {
 }
 
 @Composable
-private fun ChapterSheet(chapters: List<Chapter>, position: Long, onSelect: (Chapter) -> Unit) {
+private fun ChapterSheet(
+    chapters: List<Chapter>,
+    position: Long,
+    episodeImageUrl: String?,
+    onSelect: (Chapter) -> Unit,
+) {
     val current = chapters.lastOrNull { it.startMs <= position }
+    // Either every entry gets an image or none, so the titles stay aligned. The few chapters
+    // without an image of their own show the cover, as they do in the player.
+    val showImages = chapters.any { it.imageUrl != null }
     SheetTitle(stringResource(R.string.chapters))
     LazyColumn {
         items(chapters) { chapter ->
             ListItem(
                 headlineContent = { Text(chapter.title) },
                 supportingContent = { Text(formatTime(chapter.startMs)) },
+                leadingContent = if (showImages) {
+                    {
+                        Artwork(
+                            chapter.imageUrl,
+                            Modifier.size(48.dp),
+                            cornerRadius = 8.dp,
+                            fallbackUrl = episodeImageUrl,
+                        )
+                    }
+                } else {
+                    null
+                },
                 colors = sheetItemColors(selected = chapter == current),
                 modifier = Modifier.clickable { onSelect(chapter) },
             )

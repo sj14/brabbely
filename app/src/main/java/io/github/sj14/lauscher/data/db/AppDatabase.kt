@@ -18,8 +18,12 @@ import java.io.File
  */
 @Database(
     entities = [Podcast::class, Episode::class, ShowNotes::class, Chapter::class],
-    version = 3,
-    autoMigrations = [AutoMigration(from = 1, to = 2, spec = AppDatabase.DownloadFileName::class)],
+    version = 4,
+    autoMigrations = [
+        AutoMigration(from = 1, to = 2, spec = AppDatabase.DownloadFileName::class),
+        // Version 3 → 4 adds the image of a chapter.
+        AutoMigration(from = 3, to = 4),
+    ],
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun podcastDao(): PodcastDao

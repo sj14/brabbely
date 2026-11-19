@@ -23,8 +23,8 @@ class MigrationTest {
     fun version1To2KeepsOnlyTheFileNameOfDownloads() {
         helper.createDatabase(DATABASE, 1).use { db ->
             insertPodcast(db)
-            insertEpisode(db, id = 7, localPath = "/storage/emulated/0/Android/data/app/files/Podcasts/7.mp3")
-            insertEpisode(db, id = 8, localPath = null)
+            insertVersion1Episode(db, id = 7, localPath = "/storage/emulated/0/Android/data/app/files/Podcasts/7.mp3")
+            insertVersion1Episode(db, id = 8, localPath = null)
         }
 
         helper.runMigrationsAndValidate(DATABASE, 2, true).use { db ->
@@ -81,6 +81,29 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun version3To4AddsChapterImages() {
+        helper.createDatabase(DATABASE, 3).use { db ->
+            insertPodcast(db)
+            db.execSQL(
+                """
+                INSERT INTO episodes (id, podcastId, guid, title, pubDate, mediaUrl, mimeType, fileSize, duration,
+                    position, played, lastPlayedAt, downloadState, downloadedBytes)
+                VALUES (7, 1, 'guid-7', 'Episode', 0, 'https://example.com/7.mp3', 'audio/mpeg', 0, 0, 0, 0, 0, 'NONE', 0)
+                """,
+            )
+            db.execSQL("INSERT INTO chapters (episodeId, startMs, title) VALUES (7, 0, 'Intro')")
+        }
+
+        helper.runMigrationsAndValidate(DATABASE, 4, true).use { db ->
+            db.query("SELECT title, imageUrl FROM chapters").use { cursor ->
+                cursor.moveToNext()
+                assertEquals("Intro", cursor.getString(0))
+                assertNull(cursor.getString(1))
+            }
+        }
+    }
+
     private fun insertPodcast(db: SupportSQLiteDatabase) {
         db.execSQL(
             """
@@ -90,7 +113,7 @@ class MigrationTest {
         )
     }
 
-    private fun insertEpisode(db: SupportSQLiteDatabase, id: Long, localPath: String?) {
+    private fun insertVersion1Episode(db: SupportSQLiteDatabase, id: Long, localPath: String?) {
         val downloadState = if (localPath == null) "NONE" else "DONE"
         db.execSQL(
             """

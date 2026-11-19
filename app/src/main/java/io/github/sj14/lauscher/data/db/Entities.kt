@@ -1,5 +1,6 @@
 package io.github.sj14.lauscher.data.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -99,6 +100,8 @@ data class Chapter(
     val episodeId: Long,
     val startMs: Long,
     val title: String,
+    /** An image of its own, shown instead of the cover while the chapter plays. Only the URL is stored. */
+    @ColumnInfo(defaultValue = "NULL") val imageUrl: String? = null,
 )
 
 /** An episode together with the podcast it belongs to, for lists that mix podcasts. */

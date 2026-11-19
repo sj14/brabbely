@@ -12,7 +12,8 @@ object ChaptersJson {
             // Chapters with toc = false are only meant to change artwork, not to be listed.
             if (!chapter.optBoolean("toc", true)) continue
             val startMs = (chapter.optDouble("startTime", 0.0) * 1000).toLong()
-            chapters += ParsedChapter(startMs, chapter.optString("title"))
+            val imageUrl = chapter.optString("img").ifEmpty { null }
+            chapters += ParsedChapter(startMs, chapter.optString("title"), imageUrl)
         }
         return chapters
     }
