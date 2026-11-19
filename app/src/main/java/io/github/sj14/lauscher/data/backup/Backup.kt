@@ -4,6 +4,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.InputStream
 import java.io.OutputStream
+import java.time.LocalDate
+import java.util.zip.GZIPInputStream
+import java.util.zip.GZIPOutputStream
 
 /** What is listened to in one podcast. Episodes are identified by the GUID from the feed. */
 data class PodcastBackup(
@@ -26,10 +29,14 @@ data class Backup(
     val queue: List<QueueEntry>,
 )
 
-/** Reads and writes backups as compact JSON. */
+/** Reads and writes backups as gzip-compressed JSON. */
 object BackupFormat {
     private const val FORMAT = "lauscher-backup"
     private const val VERSION = 1
+
+    /** File name and type for a backup created on the given day. */
+    fun fileName(date: LocalDate) = "lauscher-backup-$date.json.gz"
+    const val MIME_TYPE = "application/gzip"
 
     fun write(backup: Backup, output: OutputStream) {
         val json = JSONObject()
@@ -38,11 +45,11 @@ object BackupFormat {
             .put("settings", settingsToJson(backup.settings))
             .put("podcasts", JSONArray(backup.podcasts.map(::podcastToJson)))
             .put("queue", JSONArray(backup.queue.map { JSONObject().put("feedUrl", it.feedUrl).put("guid", it.guid) }))
-        output.write(json.toString().toByteArray())
+        GZIPOutputStream(output).use { it.write(json.toString().toByteArray()) }
     }
 
     fun read(input: InputStream): Backup {
-        val json = JSONObject(input.readBytes().decodeToString())
+        val json = JSONObject(decompress(input.readBytes()).decodeToString())
         require(json.optString("format") == FORMAT) { "Not a Lauscher backup" }
 
         val podcasts = mutableListOf<PodcastBackup>()
@@ -59,6 +66,13 @@ object BackupFormat {
         }
 
         return Backup(settingsFromJson(json.optJSONObject("settings") ?: JSONObject()), podcasts, queue)
+    }
+
+    /** Earlier backups were plain JSON; compressed ones start with the gzip magic bytes. */
+    private fun decompress(bytes: ByteArray): ByteArray {
+        val isGzip = bytes.size >= 2 && bytes[0] == 0x1f.toByte() && bytes[1] == 0x8b.toByte()
+        if (!isGzip) return bytes
+        return GZIPInputStream(bytes.inputStream()).use { it.readBytes() }
     }
 
     private fun podcastToJson(podcast: PodcastBackup): JSONObject {

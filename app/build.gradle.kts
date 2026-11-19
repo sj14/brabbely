@@ -109,4 +109,5 @@ dependencies {
     implementation(libs.kotlinx.coroutines.guava)
 
     testImplementation(libs.junit)
+    testImplementation(libs.org.json)
 }

@@ -49,6 +49,7 @@ import io.github.sj14.lauscher.LOG_TAG
 import io.github.sj14.lauscher.R
 import io.github.sj14.lauscher.data.PodcastRepository
 import io.github.sj14.lauscher.data.QueueAddPosition
+import io.github.sj14.lauscher.data.backup.BackupFormat
 import io.github.sj14.lauscher.data.ShakeSensitivity
 import io.github.sj14.lauscher.data.SleepAutoMode
 import io.github.sj14.lauscher.playback.SLEEP_TIMER_MINUTES
@@ -138,7 +139,7 @@ fun SettingsScreen(onOpenDownloads: () -> Unit) {
         appContext.contentResolver.takePersistableUriPermission(uri, flags)
         update { repo.setAutoBackupFolder(uri.toString()) }
     }
-    val backupCreateLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+    val backupCreateLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(BackupFormat.MIME_TYPE)) { uri ->
         if (uri != null) runExport(uri, backupCreated, container.repository::createBackup)
     }
 
@@ -329,7 +330,7 @@ fun SettingsScreen(onOpenDownloads: () -> Unit) {
 
             Section(stringResource(R.string.section_subscriptions))
             ClickSetting(stringResource(R.string.backup_create), stringResource(R.string.backup_create_summary)) {
-                backupCreateLauncher.launch("lauscher-backup-${LocalDate.now()}.json")
+                backupCreateLauncher.launch(BackupFormat.fileName(LocalDate.now()))
             }
             ClickSetting(stringResource(R.string.backup_restore), stringResource(R.string.backup_restore_summary)) {
                 backupRestoreLauncher.launch(arrayOf("*/*"))

@@ -19,6 +19,7 @@ palette = "1.1.0"
 documentfile = "1.1.0"
 reorderable = "3.1.0"
 junit = "4.13.2"
+orgJson = "20260814"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -48,6 +49,8 @@ documentfile = { module = "androidx.documentfile:documentfile", version.ref = "d
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 palette = { module = "androidx.palette:palette-ktx", version.ref = "palette" }
 junit = { module = "junit:junit", version.ref = "junit" }
+# Android only ships stubs of org.json for unit tests.
+org-json = { module = "org.json:json", version.ref = "orgJson" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version.ref = "coroutines" }
 

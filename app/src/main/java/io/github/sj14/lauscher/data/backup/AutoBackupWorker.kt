@@ -25,10 +25,10 @@ class AutoBackupWorker(context: Context, params: WorkerParameters) : CoroutineWo
             return Result.failure()
         }
 
-        val name = "lauscher-backup-${LocalDate.now()}.json"
+        val name = BackupFormat.fileName(LocalDate.now())
         // A second backup on the same day replaces the first one.
         folder.findFile(name)?.delete()
-        val file = folder.createFile("application/json", name) ?: return Result.retry()
+        val file = folder.createFile(BackupFormat.MIME_TYPE, name) ?: return Result.retry()
         try {
             applicationContext.contentResolver.openOutputStream(file.uri)!!.use { container.repository.createBackup(it) }
         } catch (e: Exception) {
@@ -52,7 +52,8 @@ class AutoBackupWorker(context: Context, params: WorkerParameters) : CoroutineWo
     companion object {
         private const val NAME = "auto-backup"
         private const val BACKUPS_TO_KEEP = 7
-        private val BACKUP_NAME = Regex("""lauscher-backup-\d{4}-\d{2}-\d{2}\.json""")
+        /** Also matches the uncompressed backups of earlier versions. */
+        private val BACKUP_NAME = Regex("""lauscher-backup-\d{4}-\d{2}-\d{2}\.json(\.gz)?""")
 
         fun schedule(context: Context, enabled: Boolean) {
             val workManager = WorkManager.getInstance(context)
