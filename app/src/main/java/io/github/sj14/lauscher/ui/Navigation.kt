@@ -98,7 +98,6 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
         if (tabs.any { it.route == route }) selectedTab = route!!
     }
 
-    // Set right away: switching back to a tab can restore one of its detail screens, such as a podcast.
     fun selectTab(tabRoute: String) {
         selectedTab = tabRoute
         switchTab(navController, tabRoute)
@@ -220,10 +219,16 @@ private fun BottomBar(selectedTab: String, onTabClick: (String) -> Unit, modifie
     }
 }
 
+/**
+ * Shows the start screen of a tab. The tab's screens are saved and restored, so its start screen
+ * keeps its scroll position and search results, but screens opened from it, such as a podcast,
+ * are closed again.
+ */
 private fun switchTab(navController: NavHostController, route: String) {
     navController.navigate(route) {
         popUpTo(navController.graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
         restoreState = true
     }
+    navController.popBackStack(route, inclusive = false)
 }
