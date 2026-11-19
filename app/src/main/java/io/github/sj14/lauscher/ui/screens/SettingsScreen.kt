@@ -66,6 +66,7 @@ import java.time.format.FormatStyle
 private val SKIP_SECONDS = listOf(5, 10, 15, 30, 45, 60)
 private val REFRESH_HOURS = listOf(1, 3, 6, 12, 24)
 private val FADE_SECONDS = listOf(0, 5, 10, 15, 30, 60)
+private val MARK_PLAYED_SECONDS = listOf(0, 15, 30, 60, 120, 300)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -180,6 +181,14 @@ fun SettingsScreen(onOpenDownloads: () -> Unit) {
                 summary = stringResource(R.string.pause_on_zero_volume_summary),
                 checked = settings.pauseOnZeroVolume,
                 onChange = { update { repo.setPauseOnZeroVolume(it) } },
+            )
+            ChoiceSetting(
+                title = stringResource(R.string.mark_played_near_end),
+                description = stringResource(R.string.mark_played_near_end_summary),
+                options = MARK_PLAYED_SECONDS,
+                selected = settings.markPlayedRemainingSeconds,
+                label = { remainingLabel(it) },
+                onSelect = { update { repo.setMarkPlayedRemaining(it) } },
             )
             ChoiceSetting(
                 title = stringResource(R.string.queue_add_position),
@@ -366,6 +375,13 @@ fun SettingsScreen(onOpenDownloads: () -> Unit) {
             )
         }
     }
+}
+
+@Composable
+private fun remainingLabel(seconds: Int): String = when {
+    seconds == 0 -> stringResource(R.string.mark_played_at_end)
+    seconds < 60 -> stringResource(R.string.remaining, pluralStringResource(R.plurals.seconds, seconds, seconds))
+    else -> stringResource(R.string.remaining, pluralStringResource(R.plurals.minutes, seconds / 60, seconds / 60))
 }
 
 /** The display name of a folder chosen with the system file picker. */

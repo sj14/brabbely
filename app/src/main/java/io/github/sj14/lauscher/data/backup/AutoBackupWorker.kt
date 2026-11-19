@@ -52,8 +52,7 @@ class AutoBackupWorker(context: Context, params: WorkerParameters) : CoroutineWo
     companion object {
         private const val NAME = "auto-backup"
         private const val BACKUPS_TO_KEEP = 7
-        /** Also matches the uncompressed backups of earlier versions. */
-        private val BACKUP_NAME = Regex("""lauscher-backup-\d{4}-\d{2}-\d{2}\.json(\.gz)?""")
+        private val BACKUP_NAME = Regex("""lauscher-backup-\d{4}-\d{2}-\d{2}\.json\.gz""")
 
         fun schedule(context: Context, enabled: Boolean) {
             val workManager = WorkManager.getInstance(context)

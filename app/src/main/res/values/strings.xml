@@ -47,6 +47,8 @@ Find podcasts under Discover, or import your subscriptions in the settings.</str
     <string name="new_empty">You are all caught up.\nNew episodes of the last 30 days appear here.</string>
     <string name="queue_empty">The queue is empty.\nAdd episodes with \"Play next\" or \"Add to queue\".</string>
     <string name="downloads_empty">No downloaded episodes.</string>
+    <string name="removed_from_queue">Removed from queue</string>
+    <string name="undo">Undo</string>
     <string name="move">Move</string>
 
     <!-- Search -->
@@ -82,6 +84,10 @@ Find podcasts under Discover, or import your subscriptions in the settings.</str
     <string name="section_about">About</string>
     <string name="skip_silence">Skip silence</string>
     <string name="skip_silence_summary">Shortens pauses in speech</string>
+    <string name="mark_played_near_end">Count as played when almost done</string>
+    <string name="mark_played_near_end_summary">When you pause or switch to another episode with only this much left, the episode counts as played.</string>
+    <string name="mark_played_at_end">Only at the very end</string>
+    <string name="remaining">%s left</string>
     <string name="queue_add_position">Add to queue at</string>
     <string name="queue_add_top">Top</string>
     <string name="queue_add_bottom">Bottom</string>

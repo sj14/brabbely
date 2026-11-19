@@ -1,5 +1,6 @@
 package io.github.sj14.lauscher.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -9,12 +10,20 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.DownloadForOffline
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxState
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -94,7 +103,24 @@ fun QueueScreen(onOpenEpisode: (Long) -> Unit) {
         scope.launch { container.repository.reorderQueue(ids) }
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.queue)) }) }) { padding ->
+    val snackbar = remember { SnackbarHostState() }
+    val removedMessage = stringResource(R.string.removed_from_queue)
+    val undoLabel = stringResource(R.string.undo)
+
+    fun remove(item: EpisodeWithPodcast) {
+        val previousOrder = items.map { it.episode.id }
+        items = items - item
+        scope.launch {
+            container.repository.removeFromQueue(item.episode.id)
+            val result = snackbar.showSnackbar(removedMessage, actionLabel = undoLabel, duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) container.repository.reorderQueue(previousOrder)
+        }
+    }
+
+    Scaffold(
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.queue)) }) },
+        snackbarHost = { SnackbarHost(snackbar) },
+    ) { padding ->
         if (queue == null) return@Scaffold
         if (items.isEmpty()) {
             Box(Modifier.padding(padding)) {
@@ -106,28 +132,60 @@ fun QueueScreen(onOpenEpisode: (Long) -> Unit) {
             items(items, key = { it.episode.id }) { item ->
                 ReorderableItem(reorderState, key = item.episode.id) { isDragging ->
                     val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
-                    Surface(shadowElevation = elevation) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            EpisodeRow(
-                                episode = item.episode,
-                                podcastTitle = item.podcast.title,
-                                podcastImageUrl = item.podcast.imageUrl,
-                                onClick = { onOpenEpisode(item.episode.id) },
-                                modifier = Modifier.weight(1f),
-                            )
-                            Icon(
-                                Icons.Rounded.DragHandle,
-                                contentDescription = stringResource(R.string.move),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier
-                                    .draggableHandle(onDragStopped = ::saveOrder)
-                                    .padding(start = 4.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
-                            )
+                    // Swiping sideways removes the episode; the drag handle moves it up and down.
+                    // Not saved like rememberSwipeToDismissBoxState: the list keeps saved state of removed
+                    // entries, so an entry brought back with "Undo" would come back swiped away.
+                    val swipeState = remember {
+                        SwipeToDismissBoxState(SwipeToDismissBoxValue.Settled, positionalThreshold = { it * 0.5f })
+                    }
+                    SwipeToDismissBox(
+                        state = swipeState,
+                        backgroundContent = { RemoveBackground() },
+                        onDismiss = { remove(item) },
+                    ) {
+                        Surface(shadowElevation = elevation) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                EpisodeRow(
+                                    episode = item.episode,
+                                    podcastTitle = item.podcast.title,
+                                    podcastImageUrl = item.podcast.imageUrl,
+                                    onClick = { onOpenEpisode(item.episode.id) },
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Icon(
+                                    Icons.Rounded.DragHandle,
+                                    contentDescription = stringResource(R.string.move),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier
+                                        .draggableHandle(onDragStopped = ::saveOrder)
+                                        .padding(start = 4.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+/** Shown behind a queue entry while it is swiped away. */
+@Composable
+private fun RemoveBackground() {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .padding(horizontal = 24.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Icon(Icons.Rounded.Delete, null, tint = MaterialTheme.colorScheme.onErrorContainer)
+        Icon(
+            Icons.Rounded.Delete,
+            null,
+            tint = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.align(Alignment.CenterEnd),
+        )
     }
 }
 

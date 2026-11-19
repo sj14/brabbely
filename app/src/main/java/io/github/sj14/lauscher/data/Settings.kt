@@ -35,6 +35,8 @@ data class AppSettings(
     val playbackSpeed: Float = 1.0f,
     val skipSilence: Boolean = false,
     val continueWithQueue: Boolean = true,
+    /** An episode paused or left with at most this much remaining counts as played, 0 to turn off. */
+    val markPlayedRemainingSeconds: Int = 30,
     val queueAddPosition: QueueAddPosition = QueueAddPosition.BOTTOM,
     val pauseOnZeroVolume: Boolean = true,
     val autoDownload: Boolean = false,
@@ -68,6 +70,7 @@ class SettingsRepository(context: Context) {
         val speed = floatPreferencesKey("speed")
         val skipSilence = booleanPreferencesKey("skip_silence")
         val continueWithQueue = booleanPreferencesKey("continue_with_queue")
+        val markPlayedRemaining = intPreferencesKey("mark_played_remaining")
         val queueAddPosition = stringPreferencesKey("queue_add_position")
         val pauseOnZeroVolume = booleanPreferencesKey("pause_on_zero_volume")
         val sleepVolumeReset = booleanPreferencesKey("sleep_volume_reset")
@@ -95,6 +98,7 @@ class SettingsRepository(context: Context) {
             playbackSpeed = prefs[Keys.speed] ?: defaults.playbackSpeed,
             skipSilence = prefs[Keys.skipSilence] ?: defaults.skipSilence,
             continueWithQueue = prefs[Keys.continueWithQueue] ?: defaults.continueWithQueue,
+            markPlayedRemainingSeconds = prefs[Keys.markPlayedRemaining] ?: defaults.markPlayedRemainingSeconds,
             queueAddPosition = prefs[Keys.queueAddPosition]?.let { QueueAddPosition.valueOf(it) }
                 ?: defaults.queueAddPosition,
             pauseOnZeroVolume = prefs[Keys.pauseOnZeroVolume] ?: defaults.pauseOnZeroVolume,
@@ -147,6 +151,7 @@ class SettingsRepository(context: Context) {
     suspend fun setSleepVolumeReset(enabled: Boolean) = store.edit { it[Keys.sleepVolumeReset] = enabled }
     suspend fun setQueueAddPosition(position: QueueAddPosition) =
         store.edit { it[Keys.queueAddPosition] = position.name }
+    suspend fun setMarkPlayedRemaining(seconds: Int) = store.edit { it[Keys.markPlayedRemaining] = seconds }
     suspend fun setContinueWithQueue(enabled: Boolean) = store.edit { it[Keys.continueWithQueue] = enabled }
     suspend fun setAutoDownload(enabled: Boolean) = store.edit { it[Keys.autoDownload] = enabled }
     suspend fun setWifiOnly(enabled: Boolean) = store.edit { it[Keys.wifiOnly] = enabled }

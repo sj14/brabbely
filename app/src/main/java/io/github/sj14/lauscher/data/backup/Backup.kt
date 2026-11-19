@@ -49,7 +49,8 @@ object BackupFormat {
     }
 
     fun read(input: InputStream): Backup {
-        val json = JSONObject(decompress(input.readBytes()).decodeToString())
+        val text = GZIPInputStream(input).use { it.readBytes().decodeToString() }
+        val json = JSONObject(text)
         require(json.optString("format") == FORMAT) { "Not a Lauscher backup" }
 
         val podcasts = mutableListOf<PodcastBackup>()
@@ -66,13 +67,6 @@ object BackupFormat {
         }
 
         return Backup(settingsFromJson(json.optJSONObject("settings") ?: JSONObject()), podcasts, queue)
-    }
-
-    /** Earlier backups were plain JSON; compressed ones start with the gzip magic bytes. */
-    private fun decompress(bytes: ByteArray): ByteArray {
-        val isGzip = bytes.size >= 2 && bytes[0] == 0x1f.toByte() && bytes[1] == 0x8b.toByte()
-        if (!isGzip) return bytes
-        return GZIPInputStream(bytes.inputStream()).use { it.readBytes() }
     }
 
     private fun podcastToJson(podcast: PodcastBackup): JSONObject {

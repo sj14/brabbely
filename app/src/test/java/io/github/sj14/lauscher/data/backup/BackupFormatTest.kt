@@ -28,21 +28,4 @@ class BackupFormatTest {
         assertEquals(0x8b.toByte(), bytes[1])
         assertEquals(backup, BackupFormat.read(bytes.inputStream()))
     }
-
-    @Test
-    fun readsUncompressedBackupOfEarlierVersions() {
-        val json = """
-            {"format":"lauscher-backup","version":1,
-             "settings":{"sleep_minutes":{"type":"int","value":5}},
-             "podcasts":[{"feedUrl":"https://example.com/feed.xml","title":"Example",
-                          "played":["guid-1"],"positions":{"guid-2":242520}}],
-             "queue":[]}
-        """.trimIndent()
-
-        val restored = BackupFormat.read(json.byteInputStream())
-
-        assertEquals(mapOf("sleep_minutes" to 5), restored.settings)
-        assertEquals(listOf("guid-1"), restored.podcasts.single().playedGuids)
-        assertEquals(mapOf("guid-2" to 242_520L), restored.podcasts.single().positions)
-    }
 }

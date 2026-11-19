@@ -169,14 +169,25 @@ class PlaybackService : MediaSessionService() {
 
     private fun currentEpisodeId(): Long? = player.currentMediaItem?.mediaId?.toLongOrNull()
 
-    private fun savePosition() {
+    /**
+     * Saves where the current episode is. With [markPlayedNearEnd], an episode that is left with
+     * only a little time remaining (see the settings) counts as played instead.
+     */
+    private fun savePosition(markPlayedNearEnd: Boolean = false) {
         val episodeId = currentEpisodeId() ?: return
         // A finished episode is marked as played instead; its position is reset to the start.
         if (player.playbackState == Player.STATE_ENDED) return
         val position = player.currentPosition
+        val remaining = player.duration - position
+        val nearEndMs = settings.markPlayedRemainingSeconds * 1000L
+        val nearEnd = markPlayedNearEnd && nearEndMs > 0 && player.duration != C.TIME_UNSET && remaining <= nearEndMs
         // The app scope outlives the service, so the last position is saved even in onDestroy.
         container.appScope.launch {
-            container.database.episodeDao().setPosition(episodeId, position, System.currentTimeMillis())
+            if (nearEnd) {
+                container.repository.setPlayed(episodeId, true)
+            } else {
+                container.database.episodeDao().setPosition(episodeId, position, System.currentTimeMillis())
+            }
         }
     }
 
@@ -207,7 +218,8 @@ class PlaybackService : MediaSessionService() {
                 pausedByVolumeAt = null
                 startSleepTimerIfAutomatic()
             }
-            savePosition()
+            // Only a pause by the user counts, not a short stop while buffering.
+            savePosition(markPlayedNearEnd = !player.playWhenReady)
             positionSaver?.cancel()
             if (!isPlaying) return
             positionSaver = scope.launch {
@@ -286,7 +298,8 @@ class PlaybackService : MediaSessionService() {
             startIndex: Int,
             startPositionMs: Long,
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> = scope.future {
-            savePosition()
+            // Another episode replaces the current one.
+            savePosition(markPlayedNearEnd = true)
             val id = mediaItems.firstOrNull()?.mediaId?.toLongOrNull()
             val item = id?.let { container.database.episodeDao().getWithPodcast(it) }
                 ?: return@future MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0)
