@@ -48,6 +48,7 @@ import io.github.sj14.lauscher.BuildConfig
 import io.github.sj14.lauscher.LOG_TAG
 import io.github.sj14.lauscher.R
 import io.github.sj14.lauscher.data.PodcastRepository
+import io.github.sj14.lauscher.data.QueueAddPosition
 import io.github.sj14.lauscher.data.ShakeSensitivity
 import io.github.sj14.lauscher.data.SleepAutoMode
 import io.github.sj14.lauscher.playback.SLEEP_TIMER_MINUTES
@@ -67,7 +68,7 @@ private val FADE_SECONDS = listOf(0, 5, 10, 15, 30, 60)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
+fun SettingsScreen(onOpenDownloads: () -> Unit) {
     val container = LocalContainer.current
     val repo = container.settings
     val settings = container.settings.settings.collectAsStateWithLifecycle(null).value
@@ -143,7 +144,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.settings)) }, navigationIcon = { BackButton(onBack) })
+            TopAppBar(title = { Text(stringResource(R.string.settings)) })
         },
     ) { padding ->
         if (settings == null) return@Scaffold
@@ -178,6 +179,18 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
                 summary = stringResource(R.string.pause_on_zero_volume_summary),
                 checked = settings.pauseOnZeroVolume,
                 onChange = { update { repo.setPauseOnZeroVolume(it) } },
+            )
+            ChoiceSetting(
+                title = stringResource(R.string.queue_add_position),
+                options = QueueAddPosition.entries,
+                selected = settings.queueAddPosition,
+                label = {
+                    when (it) {
+                        QueueAddPosition.TOP -> stringResource(R.string.queue_add_top)
+                        QueueAddPosition.BOTTOM -> stringResource(R.string.queue_add_bottom)
+                    }
+                },
+                onSelect = { update { repo.setQueueAddPosition(it) } },
             )
             SwitchSetting(
                 title = stringResource(R.string.continue_with_queue),

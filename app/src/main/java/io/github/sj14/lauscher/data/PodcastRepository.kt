@@ -126,9 +126,21 @@ class PodcastRepository(
         }
     }
 
+    /** Adds the episode at the top or bottom of the queue, as chosen in the settings. */
     suspend fun enqueue(episodeId: Long) {
-        val last = episodeDao.maxQueuePosition() ?: 0
-        episodeDao.setQueuePosition(episodeId, last + 1)
+        when (settings.current().queueAddPosition) {
+            QueueAddPosition.TOP -> playNext(episodeId)
+            QueueAddPosition.BOTTOM -> {
+                val last = episodeDao.maxQueuePosition() ?: 0
+                episodeDao.setQueuePosition(episodeId, last + 1)
+            }
+        }
+    }
+
+    /** Puts a playing episode at the top of the queue, unless it is already queued. */
+    suspend fun ensureQueued(episodeId: Long) {
+        val episode = episodeDao.get(episodeId) ?: return
+        if (episode.queuePosition == null) playNext(episodeId)
     }
 
     suspend fun playNext(episodeId: Long) {

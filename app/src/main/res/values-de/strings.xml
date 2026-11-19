@@ -7,12 +7,15 @@
     <string name="discover">Entdecken</string>
     <string name="settings">Einstellungen</string>
     <string name="downloads">Downloads</string>
+    <!-- Short labels for the navigation bar, which has room for about nine characters per tab. -->
+    <string name="tab_queue">Playlist</string>
+    <string name="tab_settings">Optionen</string>
     <string name="back">Zurück</string>
     <string name="cancel">Abbrechen</string>
 
     <!-- Library and podcasts -->
-    <string name="add_podcast">Podcast hinzufügen</string>
-    <string name="library_empty">Noch keine Abos.\nFinde Podcasts unter Entdecken oder importiere eine OPML-Datei in den Einstellungen.</string>
+    <string name="library_empty">Noch keine Abos.
+Finde Podcasts unter Entdecken oder importiere deine Abos in den Einstellungen.</string>
     <string name="subscribe">Abonnieren</string>
     <string name="subscribed">Abonniert</string>
     <string name="unsubscribe">Abo beenden</string>
@@ -77,6 +80,9 @@
     <string name="section_about">Über</string>
     <string name="skip_silence">Stille überspringen</string>
     <string name="skip_silence_summary">Kürzt Sprechpausen</string>
+    <string name="queue_add_position">Zur Warteschlange hinzufügen</string>
+    <string name="queue_add_top">Oben</string>
+    <string name="queue_add_bottom">Unten</string>
     <string name="continue_with_queue">Mit Warteschlange fortfahren</string>
     <string name="continue_with_queue_summary">Nach dem Ende einer Episode die nächste aus der Warteschlange abspielen</string>
     <string name="sleep_duration">Dauer</string>

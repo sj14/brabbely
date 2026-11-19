@@ -15,6 +15,9 @@ import kotlinx.coroutines.flow.map
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
+/** Where "Add to queue" puts an episode. */
+enum class QueueAddPosition { TOP, BOTTOM }
+
 /** When the sleep timer starts by itself as soon as playback starts. */
 enum class SleepAutoMode { OFF, ALWAYS, TIME_WINDOW }
 
@@ -32,6 +35,7 @@ data class AppSettings(
     val playbackSpeed: Float = 1.0f,
     val skipSilence: Boolean = false,
     val continueWithQueue: Boolean = true,
+    val queueAddPosition: QueueAddPosition = QueueAddPosition.BOTTOM,
     val pauseOnZeroVolume: Boolean = true,
     val autoDownload: Boolean = false,
     val wifiOnly: Boolean = true,
@@ -64,6 +68,7 @@ class SettingsRepository(context: Context) {
         val speed = floatPreferencesKey("speed")
         val skipSilence = booleanPreferencesKey("skip_silence")
         val continueWithQueue = booleanPreferencesKey("continue_with_queue")
+        val queueAddPosition = stringPreferencesKey("queue_add_position")
         val pauseOnZeroVolume = booleanPreferencesKey("pause_on_zero_volume")
         val sleepVolumeReset = booleanPreferencesKey("sleep_volume_reset")
         val autoDownload = booleanPreferencesKey("auto_download")
@@ -90,6 +95,8 @@ class SettingsRepository(context: Context) {
             playbackSpeed = prefs[Keys.speed] ?: defaults.playbackSpeed,
             skipSilence = prefs[Keys.skipSilence] ?: defaults.skipSilence,
             continueWithQueue = prefs[Keys.continueWithQueue] ?: defaults.continueWithQueue,
+            queueAddPosition = prefs[Keys.queueAddPosition]?.let { QueueAddPosition.valueOf(it) }
+                ?: defaults.queueAddPosition,
             pauseOnZeroVolume = prefs[Keys.pauseOnZeroVolume] ?: defaults.pauseOnZeroVolume,
             sleepVolumeReset = prefs[Keys.sleepVolumeReset] ?: defaults.sleepVolumeReset,
             autoDownload = prefs[Keys.autoDownload] ?: defaults.autoDownload,
@@ -138,6 +145,8 @@ class SettingsRepository(context: Context) {
     suspend fun setSkipSilence(enabled: Boolean) = store.edit { it[Keys.skipSilence] = enabled }
     suspend fun setPauseOnZeroVolume(enabled: Boolean) = store.edit { it[Keys.pauseOnZeroVolume] = enabled }
     suspend fun setSleepVolumeReset(enabled: Boolean) = store.edit { it[Keys.sleepVolumeReset] = enabled }
+    suspend fun setQueueAddPosition(position: QueueAddPosition) =
+        store.edit { it[Keys.queueAddPosition] = position.name }
     suspend fun setContinueWithQueue(enabled: Boolean) = store.edit { it[Keys.continueWithQueue] = enabled }
     suspend fun setAutoDownload(enabled: Boolean) = store.edit { it[Keys.autoDownload] = enabled }
     suspend fun setWifiOnly(enabled: Boolean) = store.edit { it[Keys.wifiOnly] = enabled }

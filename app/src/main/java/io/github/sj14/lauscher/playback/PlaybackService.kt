@@ -186,10 +186,15 @@ class PlaybackService : MediaSessionService() {
         return item.toMediaItem()
     }
 
-    private suspend fun playFromQueue() {
-        val next = container.database.episodeDao().getQueue().firstOrNull() ?: return
-        val item = container.database.episodeDao().getWithPodcast(next.id) ?: return
-        container.repository.removeFromQueue(next.id)
+    /** The episode after [episodeId] in the queue, or the first one if it is not queued. */
+    private suspend fun nextInQueue(episodeId: Long): Long? {
+        val queue = container.database.episodeDao().getQueue().map { it.id }
+        val index = queue.indexOf(episodeId)
+        return if (index >= 0) queue.getOrNull(index + 1) else queue.firstOrNull()
+    }
+
+    private suspend fun play(episodeId: Long) {
+        val item = container.database.episodeDao().getWithPodcast(episodeId) ?: return
         player.setMediaItem(item.toMediaItem(), item.episode.position)
         player.prepare()
         player.play()
@@ -218,7 +223,8 @@ class PlaybackService : MediaSessionService() {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             val episodeId = mediaItem?.mediaId?.toLongOrNull() ?: return
             scope.launch {
-                container.repository.removeFromQueue(episodeId)
+                // The playing episode is always part of the queue.
+                container.repository.ensureQueued(episodeId)
                 val episode = container.database.episodeDao().get(episodeId) ?: return@launch
                 container.repository.loadChapters(episode)
             }
@@ -234,9 +240,11 @@ class PlaybackService : MediaSessionService() {
                     }
                 }
                 Player.STATE_ENDED -> scope.launch {
+                    // Look up the next episode before the finished one leaves the queue.
+                    val next = nextInQueue(episodeId)
                     container.repository.setPlayed(episodeId, true)
                     val stop = container.sleepTimer.onEpisodeEnded()
-                    if (!stop && settings.continueWithQueue) playFromQueue()
+                    if (!stop && settings.continueWithQueue && next != null) play(next)
                 }
                 else -> Unit
             }

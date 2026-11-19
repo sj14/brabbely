@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.NewReleases
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -27,10 +29,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -74,8 +81,9 @@ private data class Tab(val route: String, val label: Int, val icon: ImageVector)
 private val tabs = listOf(
     Tab(Routes.LIBRARY, R.string.library, Icons.Rounded.GridView),
     Tab(Routes.NEW, R.string.new_episodes, Icons.Rounded.NewReleases),
-    Tab(Routes.QUEUE, R.string.queue, Icons.AutoMirrored.Rounded.PlaylistPlay),
+    Tab(Routes.QUEUE, R.string.tab_queue, Icons.AutoMirrored.Rounded.PlaylistPlay),
     Tab(Routes.SEARCH, R.string.discover, Icons.Rounded.Explore),
+    Tab(Routes.SETTINGS, R.string.tab_settings, Icons.Rounded.Settings),
 )
 
 @Composable
@@ -106,6 +114,23 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
         }
     }
 
+    fun onTabClick(tabRoute: String) {
+        if (playerOpen) {
+            playerOpen = false
+            if (tabRoute == selectedTab) return
+        }
+        if (tabRoute == selectedTab) {
+            // Tapping the current tab again goes back to its start, e.g. from a podcast to the library.
+            navController.popBackStack(tabRoute, inclusive = false)
+        } else {
+            selectTab(tabRoute)
+        }
+    }
+
+    // The player covers everything above the navigation bar, which stays visible below it.
+    val density = LocalDensity.current
+    var navigationBarHeight by remember { mutableStateOf(0.dp) }
+
     Box {
         // Each screen handles the status bar itself.
         Scaffold(
@@ -113,7 +138,11 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
             bottomBar = {
                 Column {
                     MiniPlayer(onOpen = { playerOpen = true })
-                    BottomBar(navController, selectedTab, onSelectTab = ::selectTab)
+                    BottomBar(
+                        selectedTab = selectedTab,
+                        onTabClick = ::onTabClick,
+                        modifier = Modifier.onSizeChanged { navigationBarHeight = with(density) { it.height.toDp() } },
+                    )
                 }
             },
         ) { padding ->
@@ -132,13 +161,7 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
                 val back: () -> Unit = { navController.popBackStack() }
                 val idArgument = listOf(navArgument("id") { type = NavType.LongType })
 
-                composable(Routes.LIBRARY) {
-                    LibraryScreen(
-                        onOpenPodcast = openPodcast,
-                        onOpenSearch = { selectTab(Routes.SEARCH) },
-                        onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-                    )
-                }
+                composable(Routes.LIBRARY) { LibraryScreen(onOpenPodcast = openPodcast) }
                 composable(Routes.NEW) { NewEpisodesScreen(onOpenEpisode = openEpisode) }
                 composable(Routes.QUEUE) { QueueScreen(onOpenEpisode = openEpisode) }
                 composable(Routes.SEARCH) { SearchScreen(onOpenPodcast = openPodcast) }
@@ -149,7 +172,7 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
                     EpisodeScreen(entry.arguments!!.getLong("id"), onBack = back, onOpenPodcast = openPodcast)
                 }
                 composable(Routes.SETTINGS) {
-                    SettingsScreen(onBack = back, onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) })
+                    SettingsScreen(onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) })
                 }
                 composable(Routes.DOWNLOADS) { DownloadsScreen(onBack = back, onOpenEpisode = openEpisode) }
             }
@@ -159,6 +182,12 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
             visible = playerOpen,
             enter = slideInVertically { it },
             exit = slideOutVertically { it },
+            modifier = Modifier
+                .padding(bottom = navigationBarHeight)
+                // The navigation bar already keeps clear of the system bar.
+                .consumeWindowInsets(WindowInsets.navigationBars)
+                // Slides in from behind the navigation bar instead of over it.
+                .clipToBounds(),
         ) {
             // Registered after the NavHost, so back closes the player instead of leaving the screen below.
             BackHandler { playerOpen = false }
@@ -178,21 +207,14 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
 }
 
 @Composable
-private fun BottomBar(navController: NavHostController, selectedTab: String, onSelectTab: (String) -> Unit) {
-    NavigationBar {
+private fun BottomBar(selectedTab: String, onTabClick: (String) -> Unit, modifier: Modifier = Modifier) {
+    NavigationBar(modifier) {
         for (tab in tabs) {
             NavigationBarItem(
                 selected = selectedTab == tab.route,
-                onClick = {
-                    if (tab.route == selectedTab) {
-                        // Tapping the current tab again goes back to its start, e.g. from a podcast to the library.
-                        navController.popBackStack(tab.route, inclusive = false)
-                    } else {
-                        onSelectTab(tab.route)
-                    }
-                },
+                onClick = { onTabClick(tab.route) },
                 icon = { Icon(tab.icon, null) },
-                label = { Text(stringResource(tab.label)) },
+                label = { Text(stringResource(tab.label), maxLines = 1, softWrap = false) },
             )
         }
     }

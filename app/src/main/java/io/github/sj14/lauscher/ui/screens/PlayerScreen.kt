@@ -1,7 +1,6 @@
 package io.github.sj14.lauscher.ui.screens
 
 import android.content.pm.ActivityInfo
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
@@ -61,6 +60,10 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -123,7 +126,6 @@ fun PlayerScreen(onClose: () -> Unit, onShowEpisode: (Long) -> Unit) {
 
     if (fullscreen && state.hasVideo) {
         FullscreenVideo(onExit = { fullscreen = false })
-        return
     }
 
     Box(
@@ -300,31 +302,36 @@ private fun VideoSurface(modifier: Modifier = Modifier, overlay: @Composable Box
     }
 }
 
+/** A dialog window of its own, so the video also covers the navigation bar of the app. */
 @Composable
 private fun FullscreenVideo(onExit: () -> Unit) {
-    val activity = LocalActivity.current ?: return
-    val connection = LocalContainer.current.playerConnection
-    DisposableEffect(Unit) {
-        val insets = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
-        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        insets.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        insets.hide(WindowInsetsCompat.Type.systemBars())
-        onDispose {
-            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            insets.show(WindowInsetsCompat.Type.systemBars())
-        }
-    }
-    BackHandler(onBack = onExit)
-
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .clickable(onClick = connection::togglePlayPause),
+    Dialog(
+        onDismissRequest = onExit,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
-        VideoView(Modifier.fillMaxSize())
-        IconButton(onClick = onExit, Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
-            Icon(Icons.Rounded.FullscreenExit, stringResource(R.string.exit_fullscreen), tint = Color.White)
+        val activity = LocalActivity.current
+        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+        DisposableEffect(window) {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            val insets = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
+            insets?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            insets?.hide(WindowInsetsCompat.Type.systemBars())
+            onDispose {
+                activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            }
+        }
+
+        val connection = LocalContainer.current.playerConnection
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .clickable(onClick = connection::togglePlayPause),
+        ) {
+            VideoView(Modifier.fillMaxSize())
+            IconButton(onClick = onExit, Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+                Icon(Icons.Rounded.FullscreenExit, stringResource(R.string.exit_fullscreen), tint = Color.White)
+            }
         }
     }
 }
