@@ -35,9 +35,10 @@ class Downloads(private val context: Context, private val episodeDao: EpisodeDao
     }
 
     suspend fun cancel(episodeId: Long) {
+        // The state is reset before the worker is stopped, so the worker can tell this apart from
+        // being stopped by the system and leaves the state alone, see DownloadWorker.
+        episodeDao.get(episodeId)?.let { delete(it) }
         workManager.cancelUniqueWork(workName(episodeId))
-        val episode = episodeDao.get(episodeId) ?: return
-        delete(episode)
     }
 
     suspend fun delete(episode: Episode) {

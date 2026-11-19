@@ -130,8 +130,9 @@ interface EpisodeDao {
     @Query("UPDATE episodes SET downloadedBytes = :bytes, fileSize = MAX(fileSize, :total) WHERE id = :id")
     suspend fun setDownloadProgress(id: Long, bytes: Long, total: Long)
 
-    @Query("SELECT * FROM episodes WHERE podcastId = :podcastId AND localPath IS NOT NULL")
-    suspend fun getDownloadedForPodcast(podcastId: Long): List<Episode>
+    /** Episodes that are downloaded, being downloaded or waiting for it. */
+    @Query("SELECT * FROM episodes WHERE podcastId = :podcastId AND downloadState != 'NONE'")
+    suspend fun getWithDownloadForPodcast(podcastId: Long): List<Episode>
 }
 
 @Dao

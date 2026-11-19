@@ -1,5 +1,7 @@
 package io.github.sj14.lauscher.ui.screens
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,11 +18,10 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Badge
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,17 +30,21 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.sj14.lauscher.LOG_TAG
 import io.github.sj14.lauscher.R
 import io.github.sj14.lauscher.data.db.PodcastWithCounts
 import io.github.sj14.lauscher.ui.LocalContainer
-import io.github.sj14.lauscher.ui.rememberScreenData
 import io.github.sj14.lauscher.ui.components.Artwork
 import io.github.sj14.lauscher.ui.components.EmptyState
 import io.github.sj14.lauscher.ui.components.MenuItem
+import io.github.sj14.lauscher.ui.components.RefreshAllBox
 import io.github.sj14.lauscher.ui.components.UnsubscribeDialog
+import io.github.sj14.lauscher.ui.rememberScreenData
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,8 +52,6 @@ import kotlinx.coroutines.launch
 fun LibraryScreen(onOpenPodcast: (Long) -> Unit) {
     val container = LocalContainer.current
     val podcasts by rememberScreenData { container.repository.observeLibrary() }
-    val scope = rememberCoroutineScope()
-    var refreshing by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -56,17 +59,7 @@ fun LibraryScreen(onOpenPodcast: (Long) -> Unit) {
         },
     ) { padding ->
         val list = podcasts ?: return@Scaffold
-        PullToRefreshBox(
-            isRefreshing = refreshing,
-            onRefresh = {
-                scope.launch {
-                    refreshing = true
-                    container.repository.refreshAll()
-                    refreshing = false
-                }
-            },
-            modifier = Modifier.padding(padding),
-        ) {
+        RefreshAllBox(Modifier.padding(padding)) {
             if (list.isEmpty()) {
                 EmptyState(stringResource(R.string.library_empty))
             } else {
@@ -90,6 +83,8 @@ fun LibraryScreen(onOpenPodcast: (Long) -> Unit) {
 @Composable
 private fun PodcastTile(item: PodcastWithCounts, onClick: () -> Unit) {
     val repository = LocalContainer.current.repository
+    val context = LocalContext.current
+    val failedMessage = stringResource(R.string.error_loading)
     val scope = rememberCoroutineScope()
     var menuOpen by remember { mutableStateOf(false) }
     var confirmUnsubscribe by remember { mutableStateOf(false) }
@@ -97,6 +92,17 @@ private fun PodcastTile(item: PodcastWithCounts, onClick: () -> Unit) {
     fun run(action: suspend () -> Unit) {
         menuOpen = false
         scope.launch { action() }
+    }
+
+    suspend fun refresh() {
+        try {
+            repository.refreshAndDownload(item.podcast)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(LOG_TAG, "Refreshing ${item.podcast.feedUrl} failed", e)
+            Toast.makeText(context, failedMessage, Toast.LENGTH_LONG).show()
+        }
     }
 
     Column(Modifier.combinedClickable(onClick = onClick, onLongClick = { menuOpen = true })) {
@@ -114,7 +120,7 @@ private fun PodcastTile(item: PodcastWithCounts, onClick: () -> Unit) {
             }
         }
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            MenuItem(R.string.refresh) { run { repository.refresh(item.podcast) } }
+            MenuItem(R.string.refresh) { run { refresh() } }
             MenuItem(R.string.mark_all_played) { run { repository.markAllPlayed(item.podcast.id) } }
             MenuItem(R.string.unsubscribe) {
                 menuOpen = false

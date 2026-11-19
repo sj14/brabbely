@@ -191,10 +191,10 @@ class PlaybackService : MediaSessionService() {
         }
     }
 
-    private suspend fun resolve(mediaItem: MediaItem): MediaItem? {
+    /** Loads the episode that a controller refers to by its media id. */
+    private suspend fun loadEpisode(mediaItem: MediaItem): EpisodeWithPodcast? {
         val id = mediaItem.mediaId.toLongOrNull() ?: return null
-        val item = container.database.episodeDao().getWithPodcast(id) ?: return null
-        return item.toMediaItem()
+        return container.database.episodeDao().getWithPodcast(id)
     }
 
     /** The episode after [episodeId] in the queue, or the first one if it is not queued. */
@@ -300,10 +300,9 @@ class PlaybackService : MediaSessionService() {
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> = scope.future {
             // Another episode replaces the current one.
             savePosition(markPlayedNearEnd = true)
-            val id = mediaItems.firstOrNull()?.mediaId?.toLongOrNull()
-            val item = id?.let { container.database.episodeDao().getWithPodcast(it) }
+            val item = mediaItems.firstOrNull()?.let { loadEpisode(it) }
                 ?: return@future MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0)
-            MediaSession.MediaItemsWithStartPosition(listOf(item.toMediaItem()), 0, item.episode.position)
+            item.toItemsWithStartPosition()
         }
 
         override fun onAddMediaItems(
@@ -311,7 +310,7 @@ class PlaybackService : MediaSessionService() {
             controller: MediaSession.ControllerInfo,
             mediaItems: List<MediaItem>,
         ): ListenableFuture<List<MediaItem>> = scope.future {
-            mediaItems.mapNotNull { resolve(it) }
+            mediaItems.mapNotNull { loadEpisode(it)?.toMediaItem() }
         }
 
         override fun onPlaybackResumption(
@@ -321,8 +320,12 @@ class PlaybackService : MediaSessionService() {
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> = scope.future {
             val item = container.database.episodeDao().getLastPlayed()
                 ?: throw UnsupportedOperationException("Nothing played yet")
-            MediaSession.MediaItemsWithStartPosition(listOf(item.toMediaItem()), 0, item.episode.position)
+            item.toItemsWithStartPosition()
         }
+
+        /** The episode alone, starting where it was left off. */
+        private fun EpisodeWithPodcast.toItemsWithStartPosition() =
+            MediaSession.MediaItemsWithStartPosition(listOf(toMediaItem()), 0, episode.position)
     }
 
     companion object {

@@ -69,6 +69,16 @@ class PlayerConnection(private val context: Context) {
         controller.play()
     }
 
+    /** Pauses the episode if it is the one playing, otherwise plays it. */
+    fun playOrPause(episodeId: Long) {
+        val state = _state.value
+        if (state.episodeId == episodeId && state.isPlaying) {
+            _controller.value?.pause()
+        } else {
+            play(episodeId)
+        }
+    }
+
     fun togglePlayPause() {
         val controller = _controller.value ?: return
         if (controller.isPlaying) controller.pause() else controller.play()

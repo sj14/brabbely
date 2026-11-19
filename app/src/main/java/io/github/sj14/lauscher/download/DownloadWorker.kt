@@ -15,6 +15,7 @@ import io.github.sj14.lauscher.LauscherApp
 import io.github.sj14.lauscher.R
 import io.github.sj14.lauscher.data.db.DownloadState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import okhttp3.Request
 import java.io.File
@@ -26,7 +27,7 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val episodeId = inputData.getLong(KEY_EPISODE_ID, -1)
         val episodeDao = container.database.episodeDao()
-        val episode = episodeDao.getWithPodcast(episodeId)?.episode ?: return@withContext Result.failure()
+        val episode = episodeDao.get(episodeId) ?: return@withContext Result.failure()
 
         setForeground(foregroundInfo(episode.title, 0))
         episodeDao.setDownload(episodeId, DownloadState.DOWNLOADING, 0, null)
@@ -67,7 +68,14 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
             Log.w(LOG_TAG, "Downloading ${episode.mediaUrl} failed", e)
             partial.delete()
             if (isStopped) {
-                // Cancelled by the user: Downloads.cancel already reset the state.
+                // Either cancelled by the user, then Downloads.cancel already reset the state, or stopped
+                // by the system, for example because Wi-Fi was lost, and WorkManager runs it again later.
+                // The coroutine is cancelled by now, so the database is only reachable without cancellation.
+                withContext(NonCancellable) {
+                    if (episodeDao.get(episodeId)?.downloadState == DownloadState.DOWNLOADING) {
+                        episodeDao.setDownload(episodeId, DownloadState.QUEUED, 0, null)
+                    }
+                }
                 Result.failure()
             } else if (runAttemptCount < MAX_ATTEMPTS) {
                 episodeDao.setDownload(episodeId, DownloadState.QUEUED, 0, null)

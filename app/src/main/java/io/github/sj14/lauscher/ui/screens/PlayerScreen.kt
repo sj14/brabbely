@@ -40,6 +40,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -396,12 +397,7 @@ private fun ChapterSheet(chapters: List<Chapter>, position: Long, onSelect: (Cha
             ListItem(
                 headlineContent = { Text(chapter.title) },
                 supportingContent = { Text(formatTime(chapter.startMs)) },
-                colors = if (chapter == current) {
-                    ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                } else {
-                    // Transparent, so the sheet's own background shows through.
-                    ListItemDefaults.colors(containerColor = Color.Transparent)
-                },
+                colors = sheetItemColors(selected = chapter == current),
                 modifier = Modifier.clickable { onSelect(chapter) },
             )
         }
@@ -421,13 +417,16 @@ private fun SheetTitle(text: String) {
 private fun SheetOption(text: String, selected: Boolean, onClick: () -> Unit) {
     ListItem(
         headlineContent = { Text(text, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) },
-        colors = if (selected) {
-            ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-        } else {
-            ListItemDefaults.colors(containerColor = Color.Transparent)
-        },
+        colors = sheetItemColors(selected),
         modifier = Modifier.clickable(onClick = onClick),
     )
+}
+
+/** Highlights the selected entry of a sheet; the others are transparent, so the sheet's background shows. */
+@Composable
+private fun sheetItemColors(selected: Boolean): ListItemColors {
+    val background = if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
+    return ListItemDefaults.colors(containerColor = background)
 }
 
 @Composable

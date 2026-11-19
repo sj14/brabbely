@@ -68,16 +68,42 @@ class PodcastRepository(
     suspend fun subscribe(podcastId: Long) = podcastDao.setSubscribed(podcastId, true)
 
     suspend fun unsubscribe(podcastId: Long) = withContext(Dispatchers.IO) {
-        for (episode in episodeDao.getDownloadedForPodcast(podcastId)) {
-            downloads.delete(episode)
+        // Also stops downloads that are still running, so they leave no file behind.
+        for (episode in episodeDao.getWithDownloadForPodcast(podcastId)) {
+            downloads.cancel(episode.id)
         }
         podcastDao.delete(podcastId)
     }
 
     suspend fun deleteUnsubscribed() = podcastDao.deleteUnsubscribed()
 
+    /** Refreshes one podcast and downloads its new episodes if enabled. */
+    suspend fun refreshAndDownload(podcast: Podcast) {
+        val newEpisodes = refresh(podcast)
+        val current = settings.current()
+        if (current.autoDownload) {
+            newEpisodes.forEach { downloads.enqueue(it.id, current.wifiOnly) }
+        }
+    }
+
+    /** Refreshes all subscriptions and downloads new episodes if enabled. Returns the number of failed feeds. */
+    suspend fun refreshAll(): Int {
+        var failures = 0
+        for (podcast in podcastDao.getSubscribed()) {
+            try {
+                refreshAndDownload(podcast)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(LOG_TAG, "Refreshing ${podcast.feedUrl} failed", e)
+                failures++
+            }
+        }
+        return failures
+    }
+
     /** Refreshes one podcast and returns the episodes that are new since the last refresh. */
-    suspend fun refresh(podcast: Podcast): List<Episode> = withContext(Dispatchers.IO) {
+    private suspend fun refresh(podcast: Podcast): List<Episode> = withContext(Dispatchers.IO) {
         val feed = fetchFeed(podcast.feedUrl)
         db.withTransaction {
             podcastDao.update(
@@ -90,26 +116,6 @@ class PodcastRepository(
             val known = episodeDao.getGuids(podcast.id).toSet()
             insertEpisodes(podcast.id, feed.episodes.filter { it.guid !in known })
         }
-    }
-
-    /** Refreshes all subscriptions and downloads new episodes if enabled. Returns the number of failed feeds. */
-    suspend fun refreshAll(): Int {
-        val current = settings.current()
-        var failures = 0
-        for (podcast in podcastDao.getSubscribed()) {
-            try {
-                val newEpisodes = refresh(podcast)
-                if (current.autoDownload) {
-                    newEpisodes.forEach { downloads.enqueue(it.id, current.wifiOnly) }
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.w(LOG_TAG, "Refreshing ${podcast.feedUrl} failed", e)
-                failures++
-            }
-        }
-        return failures
     }
 
     suspend fun loadChapters(episode: Episode) = withContext(Dispatchers.IO) {
@@ -168,22 +174,7 @@ class PodcastRepository(
     data class ImportResult(val imported: Int, val failed: Int)
 
     suspend fun importOpml(input: InputStream): ImportResult = withContext(Dispatchers.IO) {
-        var imported = 0
-        var failed = 0
-        for (entry in Opml.read(input)) {
-            try {
-                val id = preview(entry.feedUrl)
-                subscribe(id)
-                imported++
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                // Skip feeds that are gone; import the rest.
-                Log.w(LOG_TAG, "Importing ${entry.feedUrl} failed", e)
-                failed++
-            }
-        }
-        ImportResult(imported, failed)
+        subscribeAll(Opml.read(input).map { it.feedUrl })
     }
 
     suspend fun createBackup(output: OutputStream) = withContext(Dispatchers.IO) {
@@ -223,30 +214,45 @@ class PodcastRepository(
     private suspend fun restore(backup: Backup): ImportResult {
         settings.import(backup.settings)
 
-        var imported = 0
-        var failed = 0
+        val podcastsByUrl = backup.podcasts.associateBy { it.feedUrl }
         // Episode ids by feed URL and GUID, to rebuild the queue at the end.
         val episodeIds = mutableMapOf<String, Map<String, Long>>()
-        for (podcast in backup.podcasts) {
-            try {
-                val podcastId = preview(podcast.feedUrl)
-                subscribe(podcastId)
-                val ids = episodeDao.getKeys(podcastId).associate { it.guid to it.id }
-                restoreProgress(podcast, ids)
-                episodeIds[podcast.feedUrl] = ids
-                imported++
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.w(LOG_TAG, "Restoring ${podcast.feedUrl} failed", e)
-                failed++
-            }
+        val result = subscribeAll(backup.podcasts.map { it.feedUrl }) { feedUrl, podcastId ->
+            val ids = episodeDao.getKeys(podcastId).associate { it.guid to it.id }
+            restoreProgress(podcastsByUrl.getValue(feedUrl), ids)
+            episodeIds[feedUrl] = ids
         }
 
         val queue = backup.queue.mapNotNull { episodeIds[it.feedUrl]?.get(it.guid) }
         db.withTransaction {
             episodeDao.clearQueue()
             queue.forEachIndexed { index, id -> episodeDao.setQueuePosition(id, index) }
+        }
+        return result
+    }
+
+    /**
+     * Subscribes to each feed and then runs [afterSubscribe] for it. A feed that fails, for example
+     * because it is gone, is skipped and counted; the others are still imported.
+     */
+    private suspend fun subscribeAll(
+        feedUrls: List<String>,
+        afterSubscribe: suspend (feedUrl: String, podcastId: Long) -> Unit = { _, _ -> },
+    ): ImportResult {
+        var imported = 0
+        var failed = 0
+        for (feedUrl in feedUrls) {
+            try {
+                val podcastId = preview(feedUrl)
+                subscribe(podcastId)
+                afterSubscribe(feedUrl, podcastId)
+                imported++
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(LOG_TAG, "Importing $feedUrl failed", e)
+                failed++
+            }
         }
         return ImportResult(imported, failed)
     }

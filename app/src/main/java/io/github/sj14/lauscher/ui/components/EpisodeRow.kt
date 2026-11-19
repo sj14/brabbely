@@ -133,13 +133,7 @@ fun EpisodeRow(
             }
             Spacer(Modifier.width(8.dp))
             FilledTonalIconButton(
-                onClick = {
-                    if (isPlaying) {
-                        container.playerConnection.togglePlayPause()
-                    } else {
-                        container.playerConnection.play(episode.id)
-                    }
-                },
+                onClick = { container.playerConnection.playOrPause(episode.id) },
                 shape = CircleShape,
             ) {
                 Icon(

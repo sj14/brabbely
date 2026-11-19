@@ -59,6 +59,13 @@ data class AppSettings(
     val autoBackupFolder: String? = null,
 )
 
+/**
+ * The enum constant with the given name, or null if there is none. Unlike valueOf it does not throw
+ * for an unknown name, such as one restored from the backup of a newer version.
+ */
+private inline fun <reified T : Enum<T>> enumOrNull(name: String?): T? =
+    enumValues<T>().firstOrNull { it.name == name }
+
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 class SettingsRepository(context: Context) {
@@ -99,7 +106,7 @@ class SettingsRepository(context: Context) {
             skipSilence = prefs[Keys.skipSilence] ?: defaults.skipSilence,
             continueWithQueue = prefs[Keys.continueWithQueue] ?: defaults.continueWithQueue,
             markPlayedRemainingSeconds = prefs[Keys.markPlayedRemaining] ?: defaults.markPlayedRemainingSeconds,
-            queueAddPosition = prefs[Keys.queueAddPosition]?.let { QueueAddPosition.valueOf(it) }
+            queueAddPosition = enumOrNull<QueueAddPosition>(prefs[Keys.queueAddPosition])
                 ?: defaults.queueAddPosition,
             pauseOnZeroVolume = prefs[Keys.pauseOnZeroVolume] ?: defaults.pauseOnZeroVolume,
             sleepVolumeReset = prefs[Keys.sleepVolumeReset] ?: defaults.sleepVolumeReset,
@@ -108,14 +115,14 @@ class SettingsRepository(context: Context) {
             deletePlayed = prefs[Keys.deletePlayed] ?: defaults.deletePlayed,
             refreshIntervalHours = prefs[Keys.refreshInterval] ?: defaults.refreshIntervalHours,
             sleepTimerMinutes = prefs[Keys.sleepMinutes] ?: defaults.sleepTimerMinutes,
-            sleepAutoMode = prefs[Keys.sleepAutoMode]?.let { SleepAutoMode.valueOf(it) } ?: defaults.sleepAutoMode,
+            sleepAutoMode = enumOrNull<SleepAutoMode>(prefs[Keys.sleepAutoMode]) ?: defaults.sleepAutoMode,
             sleepAutoStartMinutes = prefs[Keys.sleepAutoStart] ?: defaults.sleepAutoStartMinutes,
             sleepAutoEndMinutes = prefs[Keys.sleepAutoEnd] ?: defaults.sleepAutoEndMinutes,
-            sleepShakeSensitivity = prefs[Keys.sleepShake]?.let { ShakeSensitivity.valueOf(it) }
+            sleepShakeSensitivity = enumOrNull<ShakeSensitivity>(prefs[Keys.sleepShake])
                 ?: defaults.sleepShakeSensitivity,
             sleepFadeSeconds = prefs[Keys.sleepFade] ?: defaults.sleepFadeSeconds,
             sleepShakeVibrate = prefs[Keys.sleepShakeVibrate] ?: defaults.sleepShakeVibrate,
-            themeMode = prefs[Keys.themeMode]?.let { ThemeMode.valueOf(it) } ?: defaults.themeMode,
+            themeMode = enumOrNull<ThemeMode>(prefs[Keys.themeMode]) ?: defaults.themeMode,
             dynamicColor = prefs[Keys.dynamicColor] ?: defaults.dynamicColor,
             autoBackupFolder = prefs[Keys.autoBackupFolder],
         )

@@ -85,7 +85,8 @@ fun SettingsScreen(onOpenDownloads: () -> Unit) {
     val failed = stringResource(R.string.error_loading)
     val appContext = context.applicationContext
 
-    // Importing many feeds takes a while; the app scope keeps it running when the user leaves the screen.
+    // Imports and exports run in the app scope, so leaving the screen does not cut them off halfway.
+    // Importing many feeds takes a while.
     fun runImport(uri: Uri, runningMessage: String, import: suspend (InputStream) -> PodcastRepository.ImportResult) {
         Toast.makeText(appContext, runningMessage, Toast.LENGTH_LONG).show()
         container.appScope.launch {
@@ -105,7 +106,7 @@ fun SettingsScreen(onOpenDownloads: () -> Unit) {
     }
 
     fun runExport(uri: Uri, doneMessage: String, export: suspend (OutputStream) -> Unit) {
-        scope.launch {
+        container.appScope.launch {
             val message = try {
                 appContext.contentResolver.openOutputStream(uri)!!.use { export(it) }
                 doneMessage

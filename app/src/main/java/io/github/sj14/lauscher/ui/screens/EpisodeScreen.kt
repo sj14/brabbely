@@ -95,12 +95,7 @@ fun EpisodeScreen(episodeId: Long, onBack: () -> Unit, onOpenPodcast: (Long) -> 
             Spacer(Modifier.height(16.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
-                    onClick = {
-                        if (isPlaying) container.playerConnection.togglePlayPause()
-                        else container.playerConnection.play(episode.id)
-                    },
-                ) {
+                Button(onClick = { container.playerConnection.playOrPause(episode.id) }) {
                     Icon(if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null)
                     Spacer(Modifier.width(6.dp))
                     Text(stringResource(if (isPlaying) R.string.pause else R.string.play))

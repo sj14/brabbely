@@ -35,7 +35,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +46,7 @@ import io.github.sj14.lauscher.ui.LocalContainer
 import io.github.sj14.lauscher.ui.rememberScreenData
 import io.github.sj14.lauscher.ui.components.EmptyState
 import io.github.sj14.lauscher.ui.components.EpisodeRow
+import io.github.sj14.lauscher.ui.components.RefreshAllBox
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlinx.coroutines.launch
@@ -57,22 +57,10 @@ import kotlinx.coroutines.launch
 fun NewEpisodesScreen(onOpenEpisode: (Long) -> Unit) {
     val container = LocalContainer.current
     val episodes by rememberScreenData { container.repository.observeNew() }
-    val scope = rememberCoroutineScope()
-    var refreshing by remember { mutableStateOf(false) }
 
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.new_episodes)) }) }) { padding ->
         val list = episodes ?: return@Scaffold
-        PullToRefreshBox(
-            isRefreshing = refreshing,
-            onRefresh = {
-                scope.launch {
-                    refreshing = true
-                    container.repository.refreshAll()
-                    refreshing = false
-                }
-            },
-            modifier = Modifier.padding(padding),
-        ) {
+        RefreshAllBox(Modifier.padding(padding)) {
             if (list.isEmpty()) {
                 EmptyState(stringResource(R.string.new_empty), Icons.Rounded.NewReleases)
             } else {

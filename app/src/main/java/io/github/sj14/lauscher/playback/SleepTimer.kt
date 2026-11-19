@@ -12,6 +12,7 @@ import android.os.Build
 import androidx.media3.common.Player
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -111,7 +112,7 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
 
     private suspend fun runCountdown() {
         var last = System.currentTimeMillis()
-        while (scope.isActive) {
+        while (currentCoroutineContext().isActive) {
             delay(TICK_MS)
             val now = System.currentTimeMillis()
             val elapsed = now - last
