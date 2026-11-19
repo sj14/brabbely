@@ -12,12 +12,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.Badge
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -49,19 +55,33 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryScreen(onOpenPodcast: (Long) -> Unit) {
+fun LibraryScreen(onOpenPodcast: (Long) -> Unit, onAddPodcast: () -> Unit, onOpenSettings: () -> Unit) {
     val container = LocalContainer.current
     val podcasts by rememberScreenData { container.repository.observeLibrary() }
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.library)) })
+            TopAppBar(
+                title = { Text(stringResource(R.string.library)) },
+                actions = {
+                    IconButton(onClick = onAddPodcast) {
+                        Icon(Icons.Rounded.Add, stringResource(R.string.add_podcast))
+                    }
+                    TabMenu(onOpenSettings)
+                },
+            )
         },
     ) { padding ->
         val list = podcasts ?: return@Scaffold
         RefreshAllBox(Modifier.padding(padding)) {
             if (list.isEmpty()) {
-                EmptyState(stringResource(R.string.library_empty))
+                EmptyState(stringResource(R.string.library_empty)) {
+                    FilledTonalButton(onClick = onAddPodcast) {
+                        Icon(Icons.Rounded.Add, null)
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.find_podcasts))
+                    }
+                }
             } else {
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = 150.dp),

@@ -70,7 +70,7 @@ private val MARK_PLAYED_SECONDS = listOf(0, 15, 30, 60, 120, 300)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onOpenDownloads: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
     val container = LocalContainer.current
     val repo = container.settings
     val settings = container.settings.settings.collectAsStateWithLifecycle(null).value
@@ -147,7 +147,7 @@ fun SettingsScreen(onOpenDownloads: () -> Unit) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.settings)) })
+            TopAppBar(title = { Text(stringResource(R.string.settings)) }, navigationIcon = { BackButton(onBack) })
         },
     ) { padding ->
         if (settings == null) return@Scaffold

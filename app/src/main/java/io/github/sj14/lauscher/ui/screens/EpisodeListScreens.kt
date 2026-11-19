@@ -54,11 +54,18 @@ import kotlinx.coroutines.launch
 /** Unplayed episodes of the last weeks across all subscriptions. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewEpisodesScreen(onOpenEpisode: (Long) -> Unit) {
+fun NewEpisodesScreen(onOpenEpisode: (Long) -> Unit, onOpenSettings: () -> Unit) {
     val container = LocalContainer.current
     val episodes by rememberScreenData { container.repository.observeNew() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.new_episodes)) }) }) { padding ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.new_episodes)) },
+                actions = { TabMenu(onOpenSettings) },
+            )
+        },
+    ) { padding ->
         val list = episodes ?: return@Scaffold
         RefreshAllBox(Modifier.padding(padding)) {
             if (list.isEmpty()) {
@@ -72,7 +79,7 @@ fun NewEpisodesScreen(onOpenEpisode: (Long) -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun QueueScreen(onOpenEpisode: (Long) -> Unit) {
+fun QueueScreen(onOpenEpisode: (Long) -> Unit, onOpenSettings: () -> Unit) {
     val container = LocalContainer.current
     val queue by rememberScreenData { container.repository.observeQueue() }
     val scope = rememberCoroutineScope()
@@ -106,7 +113,9 @@ fun QueueScreen(onOpenEpisode: (Long) -> Unit) {
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.queue)) }) },
+        topBar = {
+            TopAppBar(title = { Text(stringResource(R.string.queue)) }, actions = { TabMenu(onOpenSettings) })
+        },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         if (queue == null) return@Scaffold

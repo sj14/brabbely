@@ -16,10 +16,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
-import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.NewReleases
-import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -82,8 +80,6 @@ private val tabs = listOf(
     Tab(Routes.LIBRARY, R.string.library, Icons.Rounded.GridView),
     Tab(Routes.NEW, R.string.new_episodes, Icons.Rounded.NewReleases),
     Tab(Routes.QUEUE, R.string.tab_queue, Icons.AutoMirrored.Rounded.PlaylistPlay),
-    Tab(Routes.SEARCH, R.string.discover, Icons.Rounded.Explore),
-    Tab(Routes.SETTINGS, R.string.tab_settings, Icons.Rounded.Settings),
 )
 
 @Composable
@@ -160,10 +156,18 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
                 val back: () -> Unit = { navController.popBackStack() }
                 val idArgument = listOf(navArgument("id") { type = NavType.LongType })
 
-                composable(Routes.LIBRARY) { LibraryScreen(onOpenPodcast = openPodcast) }
-                composable(Routes.NEW) { NewEpisodesScreen(onOpenEpisode = openEpisode) }
-                composable(Routes.QUEUE) { QueueScreen(onOpenEpisode = openEpisode) }
-                composable(Routes.SEARCH) { SearchScreen(onOpenPodcast = openPodcast) }
+                // Discover and the settings are no tabs, they open on top of the current tab.
+                val openSearch = { navController.navigate(Routes.SEARCH) }
+                val openSettings = { navController.navigate(Routes.SETTINGS) }
+
+                composable(Routes.LIBRARY) {
+                    LibraryScreen(onOpenPodcast = openPodcast, onAddPodcast = openSearch, onOpenSettings = openSettings)
+                }
+                composable(Routes.NEW) {
+                    NewEpisodesScreen(onOpenEpisode = openEpisode, onOpenSettings = openSettings)
+                }
+                composable(Routes.QUEUE) { QueueScreen(onOpenEpisode = openEpisode, onOpenSettings = openSettings) }
+                composable(Routes.SEARCH) { SearchScreen(onBack = back, onOpenPodcast = openPodcast) }
                 composable(Routes.PODCAST, idArgument) { entry ->
                     PodcastScreen(entry.arguments!!.getLong("id"), onBack = back, onOpenEpisode = openEpisode)
                 }
@@ -171,7 +175,7 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
                     EpisodeScreen(entry.arguments!!.getLong("id"), onBack = back, onOpenPodcast = openPodcast)
                 }
                 composable(Routes.SETTINGS) {
-                    SettingsScreen(onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) })
+                    SettingsScreen(onBack = back, onOpenDownloads = { navController.navigate(Routes.DOWNLOADS) })
                 }
                 composable(Routes.DOWNLOADS) { DownloadsScreen(onBack = back, onOpenEpisode = openEpisode) }
             }

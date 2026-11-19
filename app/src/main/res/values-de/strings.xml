@@ -7,15 +7,17 @@
     <string name="discover">Entdecken</string>
     <string name="settings">Einstellungen</string>
     <string name="downloads">Downloads</string>
-    <!-- Short labels for the navigation bar, which has room for about nine characters per tab. -->
+    <!-- Short labels for the navigation bar. -->
     <string name="tab_queue">Playlist</string>
-    <string name="tab_settings">Optionen</string>
     <string name="back">Zurück</string>
+    <string name="more_options">Weitere Optionen</string>
     <string name="cancel">Abbrechen</string>
 
     <!-- Library and podcasts -->
     <string name="library_empty">Noch keine Abos.
-Finde Podcasts unter Entdecken oder importiere deine Abos in den Einstellungen.</string>
+Finde Podcasts über das + oben oder importiere deine Abos in den Einstellungen.</string>
+    <string name="add_podcast">Podcast hinzufügen</string>
+    <string name="find_podcasts">Podcasts finden</string>
     <string name="subscribe">Abonnieren</string>
     <string name="subscribed">Abonniert</string>
     <string name="unsubscribe">Abo beenden</string>

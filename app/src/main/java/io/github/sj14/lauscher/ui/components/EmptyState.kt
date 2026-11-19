@@ -21,8 +21,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
+/** Shown instead of an empty list. [action] is an optional button below the text. */
 @Composable
-fun EmptyState(text: String, icon: ImageVector = Icons.Rounded.Podcasts) {
+fun EmptyState(text: String, icon: ImageVector = Icons.Rounded.Podcasts, action: (@Composable () -> Unit)? = null) {
     // Scrollable so that pull-to-refresh also works on an empty screen.
     Column(
         modifier = Modifier
@@ -41,5 +42,9 @@ fun EmptyState(text: String, icon: ImageVector = Icons.Rounded.Podcasts) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+        if (action != null) {
+            Spacer(Modifier.height(24.dp))
+            action()
+        }
     }
 }

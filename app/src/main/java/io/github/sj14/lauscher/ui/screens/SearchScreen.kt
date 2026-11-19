@@ -106,7 +106,7 @@ class SearchViewModel(
 /** Finds podcasts by name, or opens a feed directly when a URL is entered. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchScreen(onOpenPodcast: (Long) -> Unit) {
+fun SearchScreen(onBack: () -> Unit, onOpenPodcast: (Long) -> Unit) {
     val container = LocalContainer.current
     val model = viewModel { SearchViewModel(container.search, container.repository) }
     val scope = rememberCoroutineScope()
@@ -124,7 +124,11 @@ fun SearchScreen(onOpenPodcast: (Long) -> Unit) {
         }
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.discover)) }) }) { padding ->
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text(stringResource(R.string.discover)) }, navigationIcon = { BackButton(onBack) })
+        },
+    ) { padding ->
         Column(Modifier.padding(padding)) {
             OutlinedTextField(
                 value = model.query,

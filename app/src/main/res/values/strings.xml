@@ -9,15 +9,17 @@
     <string name="discover">Discover</string>
     <string name="settings">Settings</string>
     <string name="downloads">Downloads</string>
-    <!-- Short labels for the navigation bar, which has room for about nine characters per tab. -->
+    <!-- Short labels for the navigation bar. -->
     <string name="tab_queue">Queue</string>
-    <string name="tab_settings">Settings</string>
     <string name="back">Back</string>
+    <string name="more_options">More options</string>
     <string name="cancel">Cancel</string>
 
     <!-- Library and podcasts -->
     <string name="library_empty">No subscriptions yet.
-Find podcasts under Discover, or import your subscriptions in the settings.</string>
+Find podcasts with + at the top, or import your subscriptions in the settings.</string>
+    <string name="add_podcast">Add podcast</string>
+    <string name="find_podcasts">Find podcasts</string>
     <string name="subscribe">Subscribe</string>
     <string name="subscribed">Subscribed</string>
     <string name="unsubscribe">Unsubscribe</string>
