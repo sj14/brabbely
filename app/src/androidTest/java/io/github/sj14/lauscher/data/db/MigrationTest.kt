@@ -22,12 +22,7 @@ class MigrationTest {
     @Test
     fun version1To2KeepsOnlyTheFileNameOfDownloads() {
         helper.createDatabase(DATABASE, 1).use { db ->
-            db.execSQL(
-                """
-                INSERT INTO podcasts (id, feedUrl, title, author, description, subscribed, lastRefreshed)
-                VALUES (1, 'https://example.com/feed.xml', 'Example', '', '', 1, 0)
-                """,
-            )
+            insertPodcast(db)
             insertEpisode(db, id = 7, localPath = "/storage/emulated/0/Android/data/app/files/Podcasts/7.mp3")
             insertEpisode(db, id = 8, localPath = null)
         }
@@ -40,6 +35,59 @@ class MigrationTest {
                 assertNull(cursor.getString(1))
             }
         }
+    }
+
+    @Test
+    fun version2To3MovesShowNotesIntoTheirOwnTable() {
+        helper.createDatabase(DATABASE, 2).use { db ->
+            insertPodcast(db)
+            db.execSQL(
+                """
+                INSERT INTO episodes (id, podcastId, guid, title, description, pubDate, mediaUrl, mimeType,
+                    fileSize, duration, position, played, lastPlayedAt, downloadState, downloadedBytes)
+                VALUES (?, 1, ?, 'Episode', ?, 0, 'https://example.com/a.mp3', 'audio/mpeg', 0, 0, 0, 0, 0, 'NONE', 0)
+                """,
+                arrayOf<Any?>(7, "with-notes", "<p>Notes</p>"),
+            )
+            db.execSQL(
+                """
+                INSERT INTO episodes (id, podcastId, guid, title, description, pubDate, mediaUrl, mimeType,
+                    fileSize, duration, position, played, lastPlayedAt, downloadState, downloadedBytes)
+                VALUES (?, 1, ?, 'Episode', ?, 0, 'https://example.com/b.mp3', 'audio/mpeg', 0, 0, 0, 1, 0, 'NONE', 0)
+                """,
+                arrayOf<Any?>(8, "without-notes", ""),
+            )
+            db.execSQL("INSERT INTO chapters (episodeId, startMs, title) VALUES (7, 0, 'Intro')")
+        }
+
+        helper.runMigrationsAndValidate(DATABASE, 3, true, AppDatabase.MIGRATION_2_3).use { db ->
+            db.query("SELECT episodeId, notes FROM show_notes").use { cursor ->
+                assertEquals(1, cursor.count)
+                cursor.moveToNext()
+                assertEquals(7L, cursor.getLong(0))
+                assertEquals("<p>Notes</p>", cursor.getString(1))
+            }
+            db.query("SELECT id, played FROM episodes ORDER BY id").use { cursor ->
+                assertEquals(2, cursor.count)
+                cursor.moveToNext()
+                cursor.moveToNext()
+                assertEquals(1, cursor.getInt(1))
+            }
+            // Rebuilding the episodes table must not delete the chapters that refer to it.
+            db.query("SELECT COUNT(*) FROM chapters").use { cursor ->
+                cursor.moveToNext()
+                assertEquals(1, cursor.getInt(0))
+            }
+        }
+    }
+
+    private fun insertPodcast(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            INSERT INTO podcasts (id, feedUrl, title, author, description, subscribed, lastRefreshed)
+            VALUES (1, 'https://example.com/feed.xml', 'Example', '', '', 1, 0)
+            """,
+        )
     }
 
     private fun insertEpisode(db: SupportSQLiteDatabase, id: Long, localPath: String?) {

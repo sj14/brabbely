@@ -40,7 +40,6 @@ data class Episode(
     val podcastId: Long,
     val guid: String,
     val title: String,
-    val description: String = "",
     val pubDate: Long = 0,
     val mediaUrl: String,
     val mimeType: String = "",
@@ -62,6 +61,27 @@ data class Episode(
 ) {
     val isVideo: Boolean get() = mimeType.startsWith("video/")
 }
+
+/**
+ * The show notes of an episode, as HTML or plain text. They are by far the largest part of an
+ * episode and only shown on its own screen, so they have a table of their own: the lists of
+ * episodes then do not load them. Episodes without show notes have no row here.
+ */
+@Entity(
+    tableName = "show_notes",
+    foreignKeys = [
+        ForeignKey(
+            entity = Episode::class,
+            parentColumns = ["id"],
+            childColumns = ["episodeId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class ShowNotes(
+    @PrimaryKey val episodeId: Long,
+    val notes: String,
+)
 
 @Entity(
     tableName = "chapters",

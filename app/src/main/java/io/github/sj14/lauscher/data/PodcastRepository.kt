@@ -12,6 +12,7 @@ import io.github.sj14.lauscher.data.db.AppDatabase
 import io.github.sj14.lauscher.data.db.Chapter
 import io.github.sj14.lauscher.data.db.Episode
 import io.github.sj14.lauscher.data.db.Podcast
+import io.github.sj14.lauscher.data.db.ShowNotes
 import io.github.sj14.lauscher.data.feed.ChaptersJson
 import io.github.sj14.lauscher.data.feed.FeedParser
 import io.github.sj14.lauscher.data.feed.ParsedEpisode
@@ -40,6 +41,7 @@ class PodcastRepository(
 ) {
     private val podcastDao = db.podcastDao()
     private val episodeDao = db.episodeDao()
+    private val showNotesDao = db.showNotesDao()
     private val chapterDao = db.chapterDao()
 
     fun observeLibrary() = podcastDao.observeSubscribed(newSince())
@@ -49,6 +51,7 @@ class PodcastRepository(
     fun observeNew() = episodeDao.observeNew(newSince())
     fun observeQueue() = episodeDao.observeQueue()
     fun observeDownloads() = episodeDao.observeDownloads()
+    fun observeShowNotes(episodeId: Long) = showNotesDao.observe(episodeId)
     fun observeChapters(episodeId: Long) = chapterDao.observe(episodeId)
 
     /**
@@ -277,12 +280,16 @@ class PodcastRepository(
         val episodes = parsed.map { it.toEpisode(podcastId) }
         val ids = episodeDao.insertAll(episodes)
         val inserted = mutableListOf<Episode>()
+        val showNotes = mutableListOf<ShowNotes>()
         ids.forEachIndexed { index, id ->
             if (id == -1L) return@forEachIndexed
             inserted += episodes[index].copy(id = id)
+            val description = parsed[index].description
+            if (description.isNotEmpty()) showNotes += ShowNotes(id, description)
             val chapters = parsed[index].chapters.map { Chapter(id, it.startMs, it.title) }
             if (chapters.isNotEmpty()) chapterDao.insertAll(chapters)
         }
+        showNotesDao.insertAll(showNotes)
         return inserted
     }
 
@@ -321,7 +328,6 @@ class PodcastRepository(
         podcastId = podcastId,
         guid = guid,
         title = title,
-        description = description,
         pubDate = pubDate,
         mediaUrl = mediaUrl,
         mimeType = mimeType,

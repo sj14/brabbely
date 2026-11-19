@@ -51,6 +51,8 @@ fun EpisodeScreen(episodeId: Long, onBack: () -> Unit, onOpenPodcast: (Long) -> 
     val container = LocalContainer.current
     val itemFlow = remember(episodeId) { container.repository.observeEpisode(episodeId) }
     val item by itemFlow.collectAsStateWithLifecycle(null)
+    val showNotesFlow = remember(episodeId) { container.repository.observeShowNotes(episodeId) }
+    val showNotes by showNotesFlow.collectAsStateWithLifecycle(null)
     val playerState by container.playerConnection.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
@@ -115,7 +117,7 @@ fun EpisodeScreen(episodeId: Long, onBack: () -> Unit, onOpenPodcast: (Long) -> 
             Spacer(Modifier.height(16.dp))
             HorizontalDivider()
             Spacer(Modifier.height(16.dp))
-            HtmlText(episode.description, Modifier.fillMaxWidth())
+            HtmlText(showNotes.orEmpty(), Modifier.fillMaxWidth())
             Spacer(Modifier.height(32.dp))
         }
     }

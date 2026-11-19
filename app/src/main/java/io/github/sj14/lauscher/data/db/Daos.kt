@@ -136,6 +136,15 @@ interface EpisodeDao {
 }
 
 @Dao
+interface ShowNotesDao {
+    @Query("SELECT notes FROM show_notes WHERE episodeId = :episodeId")
+    fun observe(episodeId: Long): Flow<String?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(showNotes: List<ShowNotes>)
+}
+
+@Dao
 interface ChapterDao {
     @Query("SELECT * FROM chapters WHERE episodeId = :episodeId ORDER BY startMs")
     fun observe(episodeId: Long): Flow<List<Chapter>>
