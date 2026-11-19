@@ -60,9 +60,21 @@ flake, so a new Android platform needs a newer nixpkgs there first.
 ```
 
 Every change of the database schema needs a new version in `AppDatabase` and a migration. The
-schemas of all versions are kept in `app/schemas`.
+schemas of all versions are kept in `app/schemas`; Room checks auto migrations against them when
+building. To test migrations, add `androidx.room:room-testing` with `androidx.test:runner` and
+`androidx.test.ext:junit` as `androidTestImplementation`, set `testInstrumentationRunner` to
+`androidx.test.runner.AndroidJUnitRunner` and use `MigrationTestHelper`. Two things to know:
 
-The backup to the Google account can be tried on the emulator with Android's local transport:
+- room-testing needs a newer kotlinx-serialization than the app pulls in, and the test APK has to
+  use the versions of the app. Without a constraint that raises it for the app
+  (`constraints { implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:…") }`), the
+  tests fail with an `AbstractMethodError` in `FieldBundle$$serializer`.
+- Instrumented tests install a debug test APK. With a phone connected too, run them with
+  `ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest`.
+
+Android's own backup (to the Google account, Seedvault on GrapheneOS, or the transfer to a new
+device) gets the app's backup from `SystemBackupAgent`. On the emulator it can be tried with
+Android's local transport:
 
 ```sh
 adb shell bmgr enable true

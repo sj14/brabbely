@@ -13,7 +13,7 @@ import io.github.sj14.lauscher.data.PodcastRepository
 import io.github.sj14.lauscher.data.SettingsRepository
 import io.github.sj14.lauscher.data.backup.AutoBackupWorker
 import io.github.sj14.lauscher.data.backup.BackupRepository
-import io.github.sj14.lauscher.data.backup.GoogleBackupAgent
+import io.github.sj14.lauscher.data.backup.SystemBackupAgent
 import io.github.sj14.lauscher.data.db.AppDatabase
 import io.github.sj14.lauscher.data.feed.PodcastSearch
 import io.github.sj14.lauscher.download.Downloads
@@ -67,9 +67,9 @@ class LauscherApp : Application(), SingletonImageLoader.Factory {
             // Podcasts that were only previewed in the search are not kept. This runs before the
             // restore, which previews each podcast before subscribing to it.
             container.repository.deleteUnsubscribed()
-            restoreGoogleBackup()
+            restoreSystemBackup()
         }
-        // Lets Android back up what changed since the app was last used, see GoogleBackupAgent.
+        // Lets Android back up what changed since the app was last used, see SystemBackupAgent.
         BackupManager(this).dataChanged()
         container.appScope.launch {
             container.settings.settings
@@ -85,9 +85,9 @@ class LauscherApp : Application(), SingletonImageLoader.Factory {
         }
     }
 
-    /** Restores the backup that Android brought from the Google account onto a new device, if any. */
-    private suspend fun restoreGoogleBackup() {
-        val file = GoogleBackupAgent.pendingRestoreFile(this)
+    /** Restores the backup that Android's backup brought onto a new device, if any. */
+    private suspend fun restoreSystemBackup() {
+        val file = SystemBackupAgent.pendingRestoreFile(this)
         if (!file.exists()) return
         try {
             val result = file.inputStream().use { container.backups.restoreBackup(it) }
@@ -97,7 +97,7 @@ class LauscherApp : Application(), SingletonImageLoader.Factory {
             throw e
         } catch (e: Exception) {
             // A broken backup will not get better; trying again at every start would not help.
-            Log.w(LOG_TAG, "Restoring the backup from the Google account failed", e)
+            Log.w(LOG_TAG, "Restoring the backup from Android's backup failed", e)
         }
         file.delete()
     }

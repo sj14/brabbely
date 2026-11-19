@@ -85,7 +85,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
-        // What was listened to may have changed; Android then backs it up later, see GoogleBackupAgent.
+        // What was listened to may have changed; Android then backs it up later, see SystemBackupAgent.
         BackupManager(this).dataChanged()
         // Stay connected in picture-in-picture, the video is still visible.
         if (!inPictureInPicture) container.playerConnection.release()

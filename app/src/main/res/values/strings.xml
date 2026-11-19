@@ -140,6 +140,8 @@ Find podcasts with + at the top, or import your subscriptions in the settings.</
     <string name="auto_backup">Automatic backup</string>
     <string name="auto_backup_off">Off – tap to choose a folder</string>
     <string name="auto_backup_disable">Turn off automatic backup</string>
+    <string name="system_backup">Android backup</string>
+    <string name="system_backup_summary">If the backup is turned on in the Android settings, Android also saves your subscriptions, progress and settings, for example to your Google account or with Seedvault.</string>
     <string name="antennapod_import">Import from AntennaPod</string>
     <string name="antennapod_import_summary">The database export of AntennaPod (Settings → Import/Export)</string>
     <string name="opml_import">Import OPML</string>

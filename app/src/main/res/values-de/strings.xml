@@ -138,6 +138,8 @@ Finde Podcasts über das + oben oder importiere deine Abos in den Einstellungen.
     <string name="auto_backup">Automatisches Backup</string>
     <string name="auto_backup_off">Aus – tippen, um einen Ordner zu wählen</string>
     <string name="auto_backup_disable">Automatisches Backup ausschalten</string>
+    <string name="system_backup">Android-Sicherung</string>
+    <string name="system_backup_summary">Ist die Sicherung in den Android-Einstellungen eingeschaltet, speichert Android auch deine Abos, deinen Fortschritt und die Einstellungen, zum Beispiel im Google-Konto oder mit Seedvault.</string>
     <string name="antennapod_import">Aus AntennaPod importieren</string>
     <string name="antennapod_import_summary">Der Datenbank-Export von AntennaPod (Einstellungen → Import/Export)</string>
     <string name="opml_import">OPML importieren</string>

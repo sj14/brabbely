@@ -359,6 +359,8 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
                     update { repo.setAutoBackupFolder(null) }
                 }
             }
+            // Only a note: Android's own backup is turned on in the Android settings, see SystemBackupAgent.
+            InfoSetting(stringResource(R.string.system_backup), stringResource(R.string.system_backup_summary))
             ClickSetting(stringResource(R.string.antennapod_import), stringResource(R.string.antennapod_import_summary)) {
                 antennaPodImportLauncher.launch(arrayOf("*/*"))
             }
@@ -411,6 +413,15 @@ private fun SwitchSetting(title: String, checked: Boolean, onChange: (Boolean) -
         supportingContent = summary?.let { { Text(it) } },
         trailingContent = { Switch(checked = checked, onCheckedChange = onChange) },
         modifier = Modifier.clickable { onChange(!checked) },
+    )
+}
+
+/** A setting that only explains something and cannot be changed here. */
+@Composable
+private fun InfoSetting(title: String, summary: String) {
+    ListItem(
+        headlineContent = { Text(title) },
+        supportingContent = { Text(summary) },
     )
 }
 

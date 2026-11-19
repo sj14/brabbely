@@ -13,12 +13,13 @@
 
     <!--
         Many podcast feeds and media files are still served over plain HTTP.
-        Android's own backup saves the app's own backup to the Google account, see GoogleBackupAgent.
+        Android's own backup, such as the one to the Google account, saves the app's own backup,
+        see SystemBackupAgent.
     -->
     <application
         android:name=".LauscherApp"
         android:allowBackup="true"
-        android:backupAgent=".data.backup.GoogleBackupAgent"
+        android:backupAgent=".data.backup.SystemBackupAgent"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
