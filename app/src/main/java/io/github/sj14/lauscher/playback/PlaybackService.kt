@@ -34,7 +34,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.io.File
 import java.time.LocalTime
 
 // Media button preferences and the session callbacks are still marked unstable in Media3.
@@ -211,6 +210,25 @@ class PlaybackService : MediaSessionService() {
         player.play()
     }
 
+    private fun EpisodeWithPodcast.toMediaItem(): MediaItem {
+        // Stream if the downloaded file is gone or empty, for example after it was cut off.
+        val localFile = container.downloads.fileOf(episode)?.takeIf { it.length() > 0 }
+        val uri = localFile?.let { "file://${it.path}" } ?: episode.mediaUrl
+        val metadata = MediaMetadata.Builder()
+            .setTitle(episode.title)
+            .setArtist(podcast.title)
+            .setAlbumTitle(podcast.title)
+            .setArtworkUri(imageUrl?.toUri())
+            .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
+            .build()
+        return MediaItem.Builder()
+            .setMediaId(episode.id.toString())
+            .setUri(uri)
+            .setMimeType(episode.mimeType.ifEmpty { null })
+            .setMediaMetadata(metadata)
+            .build()
+    }
+
     private inner class PlayerListener : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             if (isPlaying) {
@@ -350,23 +368,4 @@ class PlaybackService : MediaSessionService() {
             else -> CommandButton.ICON_SKIP_FORWARD
         }
     }
-}
-
-fun EpisodeWithPodcast.toMediaItem(): MediaItem {
-    // Stream if the downloaded file is gone or empty, for example after it was cut off.
-    val localFile = episode.localPath?.let(::File)?.takeIf { it.length() > 0 }
-    val uri = localFile?.let { "file://${it.path}" } ?: episode.mediaUrl
-    val metadata = MediaMetadata.Builder()
-        .setTitle(episode.title)
-        .setArtist(podcast.title)
-        .setAlbumTitle(podcast.title)
-        .setArtworkUri(imageUrl?.toUri())
-        .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
-        .build()
-    return MediaItem.Builder()
-        .setMediaId(episode.id.toString())
-        .setUri(uri)
-        .setMimeType(episode.mimeType.ifEmpty { null })
-        .setMediaMetadata(metadata)
-        .build()
 }

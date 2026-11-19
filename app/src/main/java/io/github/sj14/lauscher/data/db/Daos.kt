@@ -124,13 +124,13 @@ interface EpisodeDao {
     @Query("UPDATE episodes SET played = 1, position = 0 WHERE podcastId = :podcastId")
     suspend fun markAllPlayed(podcastId: Long)
 
-    @Query("UPDATE episodes SET downloadState = :state, downloadedBytes = :bytes, localPath = :path WHERE id = :id")
-    suspend fun setDownload(id: Long, state: DownloadState, bytes: Long, path: String?)
+    @Query("UPDATE episodes SET downloadState = :state, downloadedBytes = :bytes, downloadFile = :file WHERE id = :id")
+    suspend fun setDownload(id: Long, state: DownloadState, bytes: Long, file: String?)
 
     @Query("UPDATE episodes SET downloadedBytes = :bytes, fileSize = MAX(fileSize, :total) WHERE id = :id")
     suspend fun setDownloadProgress(id: Long, bytes: Long, total: Long)
 
-    /** Episodes that are downloaded, being downloaded or waiting for it. */
+    /** Episodes of one podcast that are downloaded, being downloaded or waiting for it. */
     @Query("SELECT * FROM episodes WHERE podcastId = :podcastId AND downloadState != 'NONE'")
     suspend fun getWithDownloadForPodcast(podcastId: Long): List<Episode>
 }

@@ -62,7 +62,7 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 }
             }
             partial.renameTo(target)
-            episodeDao.setDownload(episodeId, DownloadState.DONE, target.length(), target.path)
+            episodeDao.setDownload(episodeId, DownloadState.DONE, target.length(), target.name)
             Result.success()
         } catch (e: Exception) {
             Log.w(LOG_TAG, "Downloading ${episode.mediaUrl} failed", e)

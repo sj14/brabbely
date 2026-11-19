@@ -42,9 +42,12 @@ class Downloads(private val context: Context, private val episodeDao: EpisodeDao
     }
 
     suspend fun delete(episode: Episode) {
-        episode.localPath?.let { File(it).delete() }
+        fileOf(episode)?.delete()
         episodeDao.setDownload(episode.id, DownloadState.NONE, 0, null)
     }
+
+    /** The downloaded file of the episode, null if it has none. */
+    fun fileOf(episode: Episode): File? = episode.downloadFile?.let { File(directory, it) }
 
     fun scheduleRefresh(intervalHours: Int) {
         val request = PeriodicWorkRequestBuilder<RefreshWorker>(intervalHours.toLong(), TimeUnit.HOURS)

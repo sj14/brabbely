@@ -2,6 +2,7 @@ package io.github.sj14.lauscher
 
 import android.Manifest
 import android.app.PictureInPictureParams
+import android.app.backup.BackupManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -77,6 +78,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
+        // What was listened to may have changed; Android then backs it up later, see GoogleBackupAgent.
+        BackupManager(this).dataChanged()
         // Stay connected in picture-in-picture, the video is still visible.
         if (!inPictureInPicture) container.playerConnection.release()
     }

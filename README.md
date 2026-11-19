@@ -42,6 +42,27 @@ avdmanager create avd --name pixel --package "system-images;android-36;default;x
 emulator -avd pixel
 ```
 
+## Tests
+
+```sh
+./gradlew testDebugUnitTest                                  # unit tests on the computer
+ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest   # database migrations, on the emulator
+```
+
+`ANDROID_SERIAL` keeps the instrumented tests on the emulator when a phone is connected too.
+
+Every change of the database schema needs a new version in `AppDatabase` and a migration, and
+gets a test in `MigrationTest`. The schemas of all versions are kept in `app/schemas`.
+
+The backup to the Google account can be tried on the emulator with Android's local transport:
+
+```sh
+adb shell bmgr enable true
+adb shell bmgr transport com.android.localtransport/.LocalTransport
+adb shell bmgr backupnow io.github.sj14.lauscher.preview
+# uninstall and install again: the backup is restored at the next start of the app
+```
+
 ## Releases
 
 Pushing a version tag builds a signed APK on GitHub Actions and attaches it to the GitHub

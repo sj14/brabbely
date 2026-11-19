@@ -1,7 +1,9 @@
 package io.github.sj14.lauscher
 
 import android.app.Application
+import android.app.backup.BackupManager
 import android.content.Context
+import android.util.Log
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -10,11 +12,13 @@ import coil3.request.crossfade
 import io.github.sj14.lauscher.data.PodcastRepository
 import io.github.sj14.lauscher.data.SettingsRepository
 import io.github.sj14.lauscher.data.backup.AutoBackupWorker
+import io.github.sj14.lauscher.data.backup.GoogleBackupAgent
 import io.github.sj14.lauscher.data.db.AppDatabase
 import io.github.sj14.lauscher.data.feed.PodcastSearch
 import io.github.sj14.lauscher.download.Downloads
 import io.github.sj14.lauscher.playback.PlayerConnection
 import io.github.sj14.lauscher.playback.SleepTimer
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -58,9 +62,13 @@ class LauscherApp : Application(), SingletonImageLoader.Factory {
         super.onCreate()
         container = AppContainer(this)
         container.appScope.launch {
-            // Podcasts that were only previewed in the search are not kept.
+            // Podcasts that were only previewed in the search are not kept. This runs before the
+            // restore, which previews each podcast before subscribing to it.
             container.repository.deleteUnsubscribed()
+            restoreGoogleBackup()
         }
+        // Lets Android back up what changed since the app was last used, see GoogleBackupAgent.
+        BackupManager(this).dataChanged()
         container.appScope.launch {
             container.settings.settings
                 .map { it.refreshIntervalHours }
@@ -73,6 +81,23 @@ class LauscherApp : Application(), SingletonImageLoader.Factory {
                 .distinctUntilChanged()
                 .collect { AutoBackupWorker.schedule(this@LauscherApp, enabled = it) }
         }
+    }
+
+    /** Restores the backup that Android brought from the Google account onto a new device, if any. */
+    private suspend fun restoreGoogleBackup() {
+        val file = GoogleBackupAgent.pendingRestoreFile(this)
+        if (!file.exists()) return
+        try {
+            val result = file.inputStream().use { container.repository.restoreBackup(it) }
+            // Without a connection no feed could be loaded; then the next start tries again.
+            if (result.imported == 0 && result.failed > 0) return
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // A broken backup will not get better; trying again at every start would not help.
+            Log.w(LOG_TAG, "Restoring the backup from the Google account failed", e)
+        }
+        file.delete()
     }
 
     override fun newImageLoader(context: PlatformContext): ImageLoader =

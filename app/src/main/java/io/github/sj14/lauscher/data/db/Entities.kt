@@ -57,7 +57,8 @@ data class Episode(
     val queuePosition: Int? = null,
     val downloadState: DownloadState = DownloadState.NONE,
     val downloadedBytes: Long = 0,
-    val localPath: String? = null,
+    /** Name of the downloaded file in the downloads directory, null if the episode is not downloaded. */
+    val downloadFile: String? = null,
 ) {
     val isVideo: Boolean get() = mimeType.startsWith("video/")
 }
