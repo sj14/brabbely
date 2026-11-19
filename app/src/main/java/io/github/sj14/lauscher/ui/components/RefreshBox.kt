@@ -77,14 +77,16 @@ fun rememberRefreshPodcast(): suspend (Podcast) -> Unit {
     val repository = LocalContainer.current.repository
     val context = LocalContext.current
     val failedMessage = stringResource(R.string.error_loading)
-    return { podcast ->
-        try {
-            repository.refreshAndDownload(podcast)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.w(LOG_TAG, "Refreshing ${podcast.feedUrl} failed", e)
-            Toast.makeText(context, failedMessage, Toast.LENGTH_LONG).show()
+    return remember(repository, context, failedMessage) {
+        { podcast ->
+            try {
+                repository.refreshAndDownload(podcast)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(LOG_TAG, "Refreshing ${podcast.feedUrl} failed", e)
+                Toast.makeText(context, failedMessage, Toast.LENGTH_LONG).show()
+            }
         }
     }
 }

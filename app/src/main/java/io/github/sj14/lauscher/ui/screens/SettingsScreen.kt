@@ -47,9 +47,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.sj14.lauscher.BuildConfig
 import io.github.sj14.lauscher.LOG_TAG
 import io.github.sj14.lauscher.R
-import io.github.sj14.lauscher.data.PodcastRepository
 import io.github.sj14.lauscher.data.QueueAddPosition
 import io.github.sj14.lauscher.data.backup.BackupFormat
+import io.github.sj14.lauscher.data.backup.BackupRepository
 import io.github.sj14.lauscher.data.ShakeSensitivity
 import io.github.sj14.lauscher.data.SleepAutoMode
 import io.github.sj14.lauscher.playback.SLEEP_TIMER_MINUTES
@@ -87,7 +87,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
 
     // Imports and exports run in the app scope, so leaving the screen does not cut them off halfway.
     // Importing many feeds takes a while.
-    fun runImport(uri: Uri, runningMessage: String, import: suspend (InputStream) -> PodcastRepository.ImportResult) {
+    fun runImport(uri: Uri, runningMessage: String, import: suspend (InputStream) -> BackupRepository.ImportResult) {
         Toast.makeText(appContext, runningMessage, Toast.LENGTH_LONG).show()
         container.appScope.launch {
             val message = try {
@@ -123,16 +123,16 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
     val backupRestoreRunning = stringResource(R.string.backup_restore_running)
     val backupCreated = stringResource(R.string.backup_created)
     val opmlImportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) runImport(uri, opmlImportRunning, container.repository::importOpml)
+        if (uri != null) runImport(uri, opmlImportRunning, container.backups::importOpml)
     }
     val opmlExportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/x-opml")) { uri ->
-        if (uri != null) runExport(uri, opmlExported, container.repository::exportOpml)
+        if (uri != null) runExport(uri, opmlExported, container.backups::exportOpml)
     }
     val backupRestoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) runImport(uri, backupRestoreRunning, container.repository::restoreBackup)
+        if (uri != null) runImport(uri, backupRestoreRunning, container.backups::restoreBackup)
     }
     val antennaPodImportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) runImport(uri, backupRestoreRunning, container.repository::importAntennaPod)
+        if (uri != null) runImport(uri, backupRestoreRunning, container.backups::importAntennaPod)
     }
     val autoBackupFolderLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
@@ -142,7 +142,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
         update { repo.setAutoBackupFolder(uri.toString()) }
     }
     val backupCreateLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(BackupFormat.MIME_TYPE)) { uri ->
-        if (uri != null) runExport(uri, backupCreated, container.repository::createBackup)
+        if (uri != null) runExport(uri, backupCreated, container.backups::createBackup)
     }
 
     Scaffold(

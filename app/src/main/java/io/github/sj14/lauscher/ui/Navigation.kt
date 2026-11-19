@@ -166,7 +166,9 @@ fun LauscherNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
                 composable(Routes.NEW) {
                     NewEpisodesScreen(onOpenEpisode = openEpisode, onOpenSettings = openSettings)
                 }
-                composable(Routes.QUEUE) { QueueScreen(onOpenEpisode = openEpisode, onOpenSettings = openSettings) }
+                composable(Routes.QUEUE) {
+                    QueueScreen(onOpenEpisode = openEpisode, onOpenSettings = openSettings)
+                }
                 composable(Routes.SEARCH) { SearchScreen(onBack = back, onOpenPodcast = openPodcast) }
                 composable(Routes.PODCAST, idArgument) { entry ->
                     PodcastScreen(entry.arguments!!.getLong("id"), onBack = back, onOpenEpisode = openEpisode)

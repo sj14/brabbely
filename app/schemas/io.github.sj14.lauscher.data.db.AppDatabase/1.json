@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "6a1bcb751cc03efb23ae7f567d8ef2ea",
+    "identityHash": "48db8b356decb75699982a1499310c5c",
     "entities": [
       {
         "tableName": "podcasts",
@@ -81,7 +81,7 @@
       },
       {
         "tableName": "episodes",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `podcastId` INTEGER NOT NULL, `guid` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT NOT NULL, `pubDate` INTEGER NOT NULL, `mediaUrl` TEXT NOT NULL, `mimeType` TEXT NOT NULL, `fileSize` INTEGER NOT NULL, `duration` INTEGER NOT NULL, `imageUrl` TEXT, `chaptersUrl` TEXT, `position` INTEGER NOT NULL, `played` INTEGER NOT NULL, `lastPlayedAt` INTEGER NOT NULL, `queuePosition` INTEGER, `downloadState` TEXT NOT NULL, `downloadedBytes` INTEGER NOT NULL, `localPath` TEXT, FOREIGN KEY(`podcastId`) REFERENCES `podcasts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `podcastId` INTEGER NOT NULL, `guid` TEXT NOT NULL, `title` TEXT NOT NULL, `pubDate` INTEGER NOT NULL, `mediaUrl` TEXT NOT NULL, `mimeType` TEXT NOT NULL, `fileSize` INTEGER NOT NULL, `duration` INTEGER NOT NULL, `imageUrl` TEXT, `chaptersUrl` TEXT, `position` INTEGER NOT NULL, `played` INTEGER NOT NULL, `lastPlayedAt` INTEGER NOT NULL, `queuePosition` INTEGER, `downloadState` TEXT NOT NULL, `downloadedBytes` INTEGER NOT NULL, `downloadFile` TEXT, FOREIGN KEY(`podcastId`) REFERENCES `podcasts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -104,12 +104,6 @@
           {
             "fieldPath": "title",
             "columnName": "title",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "description",
-            "columnName": "description",
             "affinity": "TEXT",
             "notNull": true
           },
@@ -189,8 +183,8 @@
             "notNull": true
           },
           {
-            "fieldPath": "localPath",
-            "columnName": "localPath",
+            "fieldPath": "downloadFile",
+            "columnName": "downloadFile",
             "affinity": "TEXT"
           }
         ],
@@ -236,8 +230,45 @@
         ]
       },
       {
+        "tableName": "show_notes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`episodeId` INTEGER NOT NULL, `notes` TEXT NOT NULL, PRIMARY KEY(`episodeId`), FOREIGN KEY(`episodeId`) REFERENCES `episodes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "episodeId",
+            "columnName": "episodeId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "episodeId"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "episodes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "episodeId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
         "tableName": "chapters",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`episodeId` INTEGER NOT NULL, `startMs` INTEGER NOT NULL, `title` TEXT NOT NULL, PRIMARY KEY(`episodeId`, `startMs`), FOREIGN KEY(`episodeId`) REFERENCES `episodes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`episodeId` INTEGER NOT NULL, `startMs` INTEGER NOT NULL, `title` TEXT NOT NULL, `imageUrl` TEXT, PRIMARY KEY(`episodeId`, `startMs`), FOREIGN KEY(`episodeId`) REFERENCES `episodes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "episodeId",
@@ -256,6 +287,11 @@
             "columnName": "title",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "imageUrl",
+            "columnName": "imageUrl",
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
@@ -282,7 +318,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6a1bcb751cc03efb23ae7f567d8ef2ea')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '48db8b356decb75699982a1499310c5c')"
     ]
   }
 }

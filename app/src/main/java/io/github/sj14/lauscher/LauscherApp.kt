@@ -12,6 +12,7 @@ import coil3.request.crossfade
 import io.github.sj14.lauscher.data.PodcastRepository
 import io.github.sj14.lauscher.data.SettingsRepository
 import io.github.sj14.lauscher.data.backup.AutoBackupWorker
+import io.github.sj14.lauscher.data.backup.BackupRepository
 import io.github.sj14.lauscher.data.backup.GoogleBackupAgent
 import io.github.sj14.lauscher.data.db.AppDatabase
 import io.github.sj14.lauscher.data.feed.PodcastSearch
@@ -48,7 +49,8 @@ class AppContainer(context: Context) {
     val database = AppDatabase.create(context)
     val settings = SettingsRepository(context)
     val downloads = Downloads(context, database.episodeDao())
-    val repository = PodcastRepository(database, http, settings, downloads, context.cacheDir)
+    val repository = PodcastRepository(database, http, settings, downloads)
+    val backups = BackupRepository(database, settings, repository, context.cacheDir)
     val search = PodcastSearch(http)
     val sleepTimer = SleepTimer(context, appScope)
     val playerConnection = PlayerConnection(context)
@@ -88,7 +90,7 @@ class LauscherApp : Application(), SingletonImageLoader.Factory {
         val file = GoogleBackupAgent.pendingRestoreFile(this)
         if (!file.exists()) return
         try {
-            val result = file.inputStream().use { container.repository.restoreBackup(it) }
+            val result = file.inputStream().use { container.backups.restoreBackup(it) }
             // Without a connection no feed could be loaded; then the next start tries again.
             if (result.imported == 0 && result.failed > 0) return
         } catch (e: CancellationException) {

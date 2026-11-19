@@ -3,11 +3,6 @@ package io.github.sj14.lauscher.data
 import android.util.Log
 import androidx.room.withTransaction
 import io.github.sj14.lauscher.LOG_TAG
-import io.github.sj14.lauscher.data.backup.AntennaPodImport
-import io.github.sj14.lauscher.data.backup.Backup
-import io.github.sj14.lauscher.data.backup.BackupFormat
-import io.github.sj14.lauscher.data.backup.PodcastBackup
-import io.github.sj14.lauscher.data.backup.QueueEntry
 import io.github.sj14.lauscher.data.db.AppDatabase
 import io.github.sj14.lauscher.data.db.Chapter
 import io.github.sj14.lauscher.data.db.Episode
@@ -19,18 +14,13 @@ import io.github.sj14.lauscher.data.feed.ParsedChapter
 import io.github.sj14.lauscher.data.feed.ParsedEpisode
 import io.github.sj14.lauscher.data.feed.ParsedFeed
 import io.github.sj14.lauscher.data.feed.ShowNotesChapters
-import io.github.sj14.lauscher.data.opml.Opml
-import io.github.sj14.lauscher.data.opml.OpmlEntry
 import io.github.sj14.lauscher.download.Downloads
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.io.File
 import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
 import java.util.concurrent.TimeUnit
 
 class PodcastRepository(
@@ -38,8 +28,6 @@ class PodcastRepository(
     private val http: OkHttpClient,
     private val settings: SettingsRepository,
     private val downloads: Downloads,
-    /** Directory for temporary files, such as an import that has to be copied first. */
-    private val tempDir: File,
 ) {
     private val podcastDao = db.podcastDao()
     private val episodeDao = db.episodeDao()
@@ -200,108 +188,6 @@ class PodcastRepository(
     }
 
     suspend fun markAllPlayed(podcastId: Long) = episodeDao.markAllPlayed(podcastId)
-
-    data class ImportResult(val imported: Int, val failed: Int)
-
-    suspend fun importOpml(input: InputStream): ImportResult = withContext(Dispatchers.IO) {
-        subscribeAll(Opml.read(input).map { it.feedUrl })
-    }
-
-    suspend fun createBackup(output: OutputStream) = withContext(Dispatchers.IO) {
-        val subscribed = podcastDao.getSubscribed()
-        val podcasts = subscribed.map { podcast ->
-            val progress = episodeDao.getProgress(podcast.id)
-            PodcastBackup(
-                feedUrl = podcast.feedUrl,
-                title = podcast.title,
-                playedGuids = progress.filter { it.played }.map { it.guid },
-                positions = progress.filter { !it.played }.associate { it.guid to it.position },
-            )
-        }
-        val feedUrls = subscribed.associate { it.id to it.feedUrl }
-        val queue = episodeDao.getQueue().mapNotNull { episode ->
-            feedUrls[episode.podcastId]?.let { QueueEntry(it, episode.guid) }
-        }
-        BackupFormat.write(Backup(settings.export(), podcasts, queue), output)
-    }
-
-    suspend fun restoreBackup(input: InputStream): ImportResult = withContext(Dispatchers.IO) {
-        restore(BackupFormat.read(input))
-    }
-
-    /** Imports the database export of AntennaPod. SQLite needs a file, so the export is copied first. */
-    suspend fun importAntennaPod(input: InputStream): ImportResult = withContext(Dispatchers.IO) {
-        val databaseFile = File(tempDir, "antennapod-import.db")
-        try {
-            databaseFile.outputStream().use { input.copyTo(it) }
-            restore(AntennaPodImport.read(databaseFile))
-        } finally {
-            databaseFile.delete()
-        }
-    }
-
-    /** Subscribes to the podcasts of a backup and restores what was listened to and the settings. */
-    private suspend fun restore(backup: Backup): ImportResult {
-        settings.import(backup.settings)
-
-        val podcastsByUrl = backup.podcasts.associateBy { it.feedUrl }
-        // Episode ids by feed URL and GUID, to rebuild the queue at the end.
-        val episodeIds = mutableMapOf<String, Map<String, Long>>()
-        val result = subscribeAll(backup.podcasts.map { it.feedUrl }) { feedUrl, podcastId ->
-            val ids = episodeDao.getKeys(podcastId).associate { it.guid to it.id }
-            restoreProgress(podcastsByUrl.getValue(feedUrl), ids)
-            episodeIds[feedUrl] = ids
-        }
-
-        val queue = backup.queue.mapNotNull { episodeIds[it.feedUrl]?.get(it.guid) }
-        db.withTransaction {
-            episodeDao.clearQueue()
-            queue.forEachIndexed { index, id -> episodeDao.setQueuePosition(id, index) }
-        }
-        return result
-    }
-
-    /**
-     * Subscribes to each feed and then runs [afterSubscribe] for it. A feed that fails, for example
-     * because it is gone, is skipped and counted; the others are still imported.
-     */
-    private suspend fun subscribeAll(
-        feedUrls: List<String>,
-        afterSubscribe: suspend (feedUrl: String, podcastId: Long) -> Unit = { _, _ -> },
-    ): ImportResult {
-        var imported = 0
-        var failed = 0
-        for (feedUrl in feedUrls) {
-            try {
-                val podcastId = preview(feedUrl)
-                subscribe(podcastId)
-                afterSubscribe(feedUrl, podcastId)
-                imported++
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.w(LOG_TAG, "Importing $feedUrl failed", e)
-                failed++
-            }
-        }
-        return ImportResult(imported, failed)
-    }
-
-    private suspend fun restoreProgress(podcast: PodcastBackup, episodeIds: Map<String, Long>) = db.withTransaction {
-        for (guid in podcast.playedGuids) {
-            val id = episodeIds[guid] ?: continue
-            episodeDao.setPlayed(id, true)
-        }
-        for ((guid, position) in podcast.positions) {
-            val id = episodeIds[guid] ?: continue
-            episodeDao.setPosition(id, position, playedAt = 0)
-        }
-    }
-
-    suspend fun exportOpml(output: OutputStream) = withContext(Dispatchers.IO) {
-        val entries = podcastDao.getSubscribed().map { OpmlEntry(it.title, it.feedUrl) }
-        Opml.write(entries, output)
-    }
 
     private suspend fun insertEpisodes(podcastId: Long, parsed: List<ParsedEpisode>): List<Episode> {
         val episodes = parsed.map { it.toEpisode(podcastId) }

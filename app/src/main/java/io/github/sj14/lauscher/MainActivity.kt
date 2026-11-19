@@ -5,6 +5,7 @@ import android.app.PictureInPictureParams
 import android.app.backup.BackupManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.util.Rational
@@ -36,6 +37,12 @@ class MainActivity : ComponentActivity() {
     /** Set when the app is opened from the playback notification. */
     private var openPlayerRequest by mutableStateOf(false)
     private var inPictureInPicture by mutableStateOf(false)
+
+    /**
+     * Where the player shows the video, in window coordinates, null while it shows none. Android
+     * lets the picture-in-picture window grow out of it instead of out of the whole screen.
+     */
+    private var videoBounds: Rect? = null
 
     private val pipListener = Consumer<PictureInPictureModeChangedInfo> { info ->
         inPictureInPicture = info.isInPictureInPictureMode
@@ -93,7 +100,7 @@ class MainActivity : ComponentActivity() {
         super.onUserLeaveHint()
         // Before Android 12 the app has to enter picture-in-picture itself.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && isVideoPlaying()) {
-            enterPictureInPictureMode(pictureInPictureParams(autoEnter = false))
+            enterPictureInPictureMode(pictureInPictureParams())
         }
     }
 
@@ -107,16 +114,24 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                container.playerConnection.state.collect { state ->
-                    setPictureInPictureParams(pictureInPictureParams(autoEnter = state.isPlaying && state.hasVideo))
+                container.playerConnection.state.collect {
+                    setPictureInPictureParams(pictureInPictureParams())
                 }
             }
         }
     }
 
-    private fun pictureInPictureParams(autoEnter: Boolean): PictureInPictureParams {
+    /** Called by the player when its video moves, appears or disappears. */
+    fun setVideoBounds(bounds: Rect?) {
+        if (bounds == videoBounds) return
+        videoBounds = bounds
+        setPictureInPictureParams(pictureInPictureParams())
+    }
+
+    private fun pictureInPictureParams(): PictureInPictureParams {
         val builder = PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9))
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) builder.setAutoEnterEnabled(autoEnter)
+        videoBounds?.let { builder.setSourceRectHint(it) }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) builder.setAutoEnterEnabled(isVideoPlaying())
         return builder.build()
     }
 

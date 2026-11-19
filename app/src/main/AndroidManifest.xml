@@ -37,10 +37,16 @@
             </intent-filter>
         </activity>
 
+        <!--
+            Exported without a permission on purpose: the notification, Bluetooth devices, Android
+            Auto and other media controllers have to reach it. Media3 decides which commands a
+            controller may send, see PlaybackService.SessionCallback.
+        -->
         <service
             android:name=".playback.PlaybackService"
             android:exported="true"
-            android:foregroundServiceType="mediaPlayback">
+            android:foregroundServiceType="mediaPlayback"
+            tools:ignore="ExportedService">
             <intent-filter>
                 <action android:name="androidx.media3.session.MediaSessionService" />
                 <action android:name="android.media.browse.MediaBrowserService" />

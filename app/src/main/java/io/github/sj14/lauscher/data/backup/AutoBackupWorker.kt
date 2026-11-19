@@ -30,7 +30,7 @@ class AutoBackupWorker(context: Context, params: WorkerParameters) : CoroutineWo
         folder.findFile(name)?.delete()
         val file = folder.createFile(BackupFormat.MIME_TYPE, name) ?: return Result.retry()
         try {
-            applicationContext.contentResolver.openOutputStream(file.uri)!!.use { container.repository.createBackup(it) }
+            applicationContext.contentResolver.openOutputStream(file.uri)!!.use { container.backups.createBackup(it) }
         } catch (e: Exception) {
             Log.w(LOG_TAG, "Automatic backup failed", e)
             file.delete()

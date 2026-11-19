@@ -20,10 +20,10 @@ import java.io.File
  */
 class GoogleBackupAgent : BackupAgent() {
     override fun onBackup(oldState: ParcelFileDescriptor?, data: BackupDataOutput, newState: ParcelFileDescriptor) {
-        val repository = (applicationContext as LauscherApp).container.repository
+        val backups = (applicationContext as LauscherApp).container.backups
         val output = ByteArrayOutputStream()
         // Backup agents are called on a background thread and may block.
-        runBlocking { repository.createBackup(output) }
+        runBlocking { backups.createBackup(output) }
         val bytes = output.toByteArray()
         data.writeEntityHeader(KEY, bytes.size)
         data.writeEntityData(bytes, bytes.size)

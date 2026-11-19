@@ -48,6 +48,7 @@ import io.github.sj14.lauscher.ui.components.Artwork
 import io.github.sj14.lauscher.ui.components.EmptyState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -67,15 +68,20 @@ class SearchViewModel(
     var failed by mutableStateOf(false)
         private set
 
+    private var searchJob: Job? = null
+
     fun search() {
         val text = query.trim()
         if (text.isEmpty()) return
-        viewModelScope.launch {
+        // A search still running would otherwise show its older results over the new ones.
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
             loading = true
             failed = false
             try {
                 results = withContext(Dispatchers.IO) { search.search(text) }
             } catch (e: CancellationException) {
+                // Replaced by a newer search, which shows its own progress.
                 throw e
             } catch (e: Exception) {
                 Log.w(LOG_TAG, "Searching for $text failed", e)

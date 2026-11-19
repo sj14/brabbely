@@ -66,6 +66,13 @@ data class AppSettings(
 private inline fun <reified T : Enum<T>> enumOrNull(name: String?): T? =
     enumValues<T>().firstOrNull { it.name == name }
 
+/**
+ * The value of [key], or null if it is missing or has another type. A backup of a newer version
+ * could have written a setting with another type; reading it with `prefs[key]` would then throw
+ * at every start of the app.
+ */
+private inline fun <reified T> Preferences.read(key: Preferences.Key<T>): T? = asMap()[key] as? T
+
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 class SettingsRepository(context: Context) {
@@ -100,31 +107,31 @@ class SettingsRepository(context: Context) {
     val settings: Flow<AppSettings> = store.data.map { prefs ->
         val defaults = AppSettings()
         AppSettings(
-            skipBackSeconds = prefs[Keys.skipBack] ?: defaults.skipBackSeconds,
-            skipForwardSeconds = prefs[Keys.skipForward] ?: defaults.skipForwardSeconds,
-            playbackSpeed = prefs[Keys.speed] ?: defaults.playbackSpeed,
-            skipSilence = prefs[Keys.skipSilence] ?: defaults.skipSilence,
-            continueWithQueue = prefs[Keys.continueWithQueue] ?: defaults.continueWithQueue,
-            markPlayedRemainingSeconds = prefs[Keys.markPlayedRemaining] ?: defaults.markPlayedRemainingSeconds,
-            queueAddPosition = enumOrNull<QueueAddPosition>(prefs[Keys.queueAddPosition])
+            skipBackSeconds = prefs.read(Keys.skipBack) ?: defaults.skipBackSeconds,
+            skipForwardSeconds = prefs.read(Keys.skipForward) ?: defaults.skipForwardSeconds,
+            playbackSpeed = prefs.read(Keys.speed) ?: defaults.playbackSpeed,
+            skipSilence = prefs.read(Keys.skipSilence) ?: defaults.skipSilence,
+            continueWithQueue = prefs.read(Keys.continueWithQueue) ?: defaults.continueWithQueue,
+            markPlayedRemainingSeconds = prefs.read(Keys.markPlayedRemaining) ?: defaults.markPlayedRemainingSeconds,
+            queueAddPosition = enumOrNull<QueueAddPosition>(prefs.read(Keys.queueAddPosition))
                 ?: defaults.queueAddPosition,
-            pauseOnZeroVolume = prefs[Keys.pauseOnZeroVolume] ?: defaults.pauseOnZeroVolume,
-            sleepVolumeReset = prefs[Keys.sleepVolumeReset] ?: defaults.sleepVolumeReset,
-            autoDownload = prefs[Keys.autoDownload] ?: defaults.autoDownload,
-            wifiOnly = prefs[Keys.wifiOnly] ?: defaults.wifiOnly,
-            deletePlayed = prefs[Keys.deletePlayed] ?: defaults.deletePlayed,
-            refreshIntervalHours = prefs[Keys.refreshInterval] ?: defaults.refreshIntervalHours,
-            sleepTimerMinutes = prefs[Keys.sleepMinutes] ?: defaults.sleepTimerMinutes,
-            sleepAutoMode = enumOrNull<SleepAutoMode>(prefs[Keys.sleepAutoMode]) ?: defaults.sleepAutoMode,
-            sleepAutoStartMinutes = prefs[Keys.sleepAutoStart] ?: defaults.sleepAutoStartMinutes,
-            sleepAutoEndMinutes = prefs[Keys.sleepAutoEnd] ?: defaults.sleepAutoEndMinutes,
-            sleepShakeSensitivity = enumOrNull<ShakeSensitivity>(prefs[Keys.sleepShake])
+            pauseOnZeroVolume = prefs.read(Keys.pauseOnZeroVolume) ?: defaults.pauseOnZeroVolume,
+            sleepVolumeReset = prefs.read(Keys.sleepVolumeReset) ?: defaults.sleepVolumeReset,
+            autoDownload = prefs.read(Keys.autoDownload) ?: defaults.autoDownload,
+            wifiOnly = prefs.read(Keys.wifiOnly) ?: defaults.wifiOnly,
+            deletePlayed = prefs.read(Keys.deletePlayed) ?: defaults.deletePlayed,
+            refreshIntervalHours = prefs.read(Keys.refreshInterval) ?: defaults.refreshIntervalHours,
+            sleepTimerMinutes = prefs.read(Keys.sleepMinutes) ?: defaults.sleepTimerMinutes,
+            sleepAutoMode = enumOrNull<SleepAutoMode>(prefs.read(Keys.sleepAutoMode)) ?: defaults.sleepAutoMode,
+            sleepAutoStartMinutes = prefs.read(Keys.sleepAutoStart) ?: defaults.sleepAutoStartMinutes,
+            sleepAutoEndMinutes = prefs.read(Keys.sleepAutoEnd) ?: defaults.sleepAutoEndMinutes,
+            sleepShakeSensitivity = enumOrNull<ShakeSensitivity>(prefs.read(Keys.sleepShake))
                 ?: defaults.sleepShakeSensitivity,
-            sleepFadeSeconds = prefs[Keys.sleepFade] ?: defaults.sleepFadeSeconds,
-            sleepShakeVibrate = prefs[Keys.sleepShakeVibrate] ?: defaults.sleepShakeVibrate,
-            themeMode = enumOrNull<ThemeMode>(prefs[Keys.themeMode]) ?: defaults.themeMode,
-            dynamicColor = prefs[Keys.dynamicColor] ?: defaults.dynamicColor,
-            autoBackupFolder = prefs[Keys.autoBackupFolder],
+            sleepFadeSeconds = prefs.read(Keys.sleepFade) ?: defaults.sleepFadeSeconds,
+            sleepShakeVibrate = prefs.read(Keys.sleepShakeVibrate) ?: defaults.sleepShakeVibrate,
+            themeMode = enumOrNull<ThemeMode>(prefs.read(Keys.themeMode)) ?: defaults.themeMode,
+            dynamicColor = prefs.read(Keys.dynamicColor) ?: defaults.dynamicColor,
+            autoBackupFolder = prefs.read(Keys.autoBackupFolder),
         )
     }
 

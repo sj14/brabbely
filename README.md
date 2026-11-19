@@ -56,14 +56,11 @@ flake, so a new Android platform needs a newer nixpkgs there first.
 ## Tests
 
 ```sh
-./gradlew testDebugUnitTest                                  # unit tests on the computer
-ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest   # database migrations, on the emulator
+./gradlew testDebugUnitTest      # unit tests on the computer
 ```
 
-`ANDROID_SERIAL` keeps the instrumented tests on the emulator when a phone is connected too.
-
-Every change of the database schema needs a new version in `AppDatabase` and a migration, and
-gets a test in `MigrationTest`. The schemas of all versions are kept in `app/schemas`.
+Every change of the database schema needs a new version in `AppDatabase` and a migration. The
+schemas of all versions are kept in `app/schemas`.
 
 The backup to the Google account can be tried on the emulator with Android's local transport:
 

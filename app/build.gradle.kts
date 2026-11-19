@@ -17,7 +17,6 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     androidResources {
@@ -111,12 +110,4 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.org.json)
-    // The database migrations are tested on a device or emulator: ./gradlew connectedDebugAndroidTest
-    constraints {
-        // room-testing needs at least this version, and the test APK has to use the versions of the app.
-        implementation(libs.kotlinx.serialization.core)
-    }
-    androidTestImplementation(libs.room.testing)
-    androidTestImplementation(libs.androidx.test.runner)
-    androidTestImplementation(libs.androidx.test.junit)
 }
