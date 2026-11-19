@@ -82,11 +82,14 @@ class PodcastRepository(
 
     suspend fun deleteUnsubscribed() = podcastDao.deleteUnsubscribed()
 
-    /** Refreshes one podcast and downloads its new episodes if enabled. */
+    /**
+     * Refreshes one podcast and downloads its new episodes if enabled. A podcast that is only
+     * previewed from the search can be refreshed too, but nothing is downloaded for it.
+     */
     suspend fun refreshAndDownload(podcast: Podcast) {
         val newEpisodes = refresh(podcast)
         val current = settings.current()
-        if (current.autoDownload) {
+        if (current.autoDownload && podcast.subscribed) {
             newEpisodes.forEach { downloads.enqueue(it.id, current.wifiOnly) }
         }
     }

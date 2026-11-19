@@ -1,7 +1,5 @@
 package io.github.sj14.lauscher.ui.screens
 
-import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,11 +34,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import io.github.sj14.lauscher.LOG_TAG
 import io.github.sj14.lauscher.R
 import io.github.sj14.lauscher.data.db.PodcastWithCounts
 import io.github.sj14.lauscher.ui.LocalContainer
@@ -48,9 +44,9 @@ import io.github.sj14.lauscher.ui.components.Artwork
 import io.github.sj14.lauscher.ui.components.EmptyState
 import io.github.sj14.lauscher.ui.components.MenuItem
 import io.github.sj14.lauscher.ui.components.RefreshAllBox
+import io.github.sj14.lauscher.ui.components.rememberRefreshPodcast
 import io.github.sj14.lauscher.ui.components.UnsubscribeDialog
 import io.github.sj14.lauscher.ui.rememberScreenData
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -103,8 +99,7 @@ fun LibraryScreen(onOpenPodcast: (Long) -> Unit, onAddPodcast: () -> Unit, onOpe
 @Composable
 private fun PodcastTile(item: PodcastWithCounts, onClick: () -> Unit) {
     val repository = LocalContainer.current.repository
-    val context = LocalContext.current
-    val failedMessage = stringResource(R.string.error_loading)
+    val refreshPodcast = rememberRefreshPodcast()
     val scope = rememberCoroutineScope()
     var menuOpen by remember { mutableStateOf(false) }
     var confirmUnsubscribe by remember { mutableStateOf(false) }
@@ -112,17 +107,6 @@ private fun PodcastTile(item: PodcastWithCounts, onClick: () -> Unit) {
     fun run(action: suspend () -> Unit) {
         menuOpen = false
         scope.launch { action() }
-    }
-
-    suspend fun refresh() {
-        try {
-            repository.refreshAndDownload(item.podcast)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.w(LOG_TAG, "Refreshing ${item.podcast.feedUrl} failed", e)
-            Toast.makeText(context, failedMessage, Toast.LENGTH_LONG).show()
-        }
     }
 
     Column(Modifier.combinedClickable(onClick = onClick, onLongClick = { menuOpen = true })) {
@@ -140,7 +124,7 @@ private fun PodcastTile(item: PodcastWithCounts, onClick: () -> Unit) {
             }
         }
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            MenuItem(R.string.refresh) { run { refresh() } }
+            MenuItem(R.string.refresh) { run { refreshPodcast(item.podcast) } }
             MenuItem(R.string.mark_all_played) { run { repository.markAllPlayed(item.podcast.id) } }
             MenuItem(R.string.unsubscribe) {
                 menuOpen = false

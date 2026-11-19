@@ -46,6 +46,8 @@ import io.github.sj14.lauscher.ui.rememberScreenData
 import io.github.sj14.lauscher.ui.components.Artwork
 import io.github.sj14.lauscher.ui.components.EpisodeRow
 import io.github.sj14.lauscher.ui.components.HtmlText
+import io.github.sj14.lauscher.ui.components.RefreshBox
+import io.github.sj14.lauscher.ui.components.rememberRefreshPodcast
 import io.github.sj14.lauscher.ui.components.UnsubscribeDialog
 import kotlinx.coroutines.launch
 
@@ -59,6 +61,7 @@ fun PodcastScreen(podcastId: Long, onBack: () -> Unit, onOpenEpisode: (Long) -> 
     val episodes = loadedEpisodes.orEmpty()
     val scope = rememberCoroutineScope()
     var confirmUnsubscribe by remember { mutableStateOf(false) }
+    val refreshPodcast = rememberRefreshPodcast()
 
     Scaffold(
         topBar = {
@@ -72,29 +75,31 @@ fun PodcastScreen(podcastId: Long, onBack: () -> Unit, onOpenEpisode: (Long) -> 
         },
     ) { padding ->
         val current = podcast ?: return@Scaffold
-        LazyColumn(Modifier.fillMaxSize().padding(padding)) {
-            item {
-                PodcastHeader(
-                    podcast = current,
-                    onSubscribe = { scope.launch { repository.subscribe(podcastId) } },
-                    onUnsubscribe = { confirmUnsubscribe = true },
-                )
-            }
-            item {
-                Text(
-                    pluralStringResource(R.plurals.episode_count, episodes.size, episodes.size),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp),
-                )
-            }
-            items(episodes, key = { it.id }) { episode ->
-                EpisodeRow(
-                    episode = episode,
-                    onClick = { onOpenEpisode(episode.id) },
-                    podcastImageUrl = current.imageUrl,
-                    modifier = Modifier.animateItem(),
-                )
-                HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+        RefreshBox(onRefresh = { refreshPodcast(current) }, modifier = Modifier.padding(padding)) {
+            LazyColumn(Modifier.fillMaxSize()) {
+                item {
+                    PodcastHeader(
+                        podcast = current,
+                        onSubscribe = { scope.launch { repository.subscribe(podcastId) } },
+                        onUnsubscribe = { confirmUnsubscribe = true },
+                    )
+                }
+                item {
+                    Text(
+                        pluralStringResource(R.plurals.episode_count, episodes.size, episodes.size),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp),
+                    )
+                }
+                items(episodes, key = { it.id }) { episode ->
+                    EpisodeRow(
+                        episode = episode,
+                        onClick = { onOpenEpisode(episode.id) },
+                        podcastImageUrl = current.imageUrl,
+                        modifier = Modifier.animateItem(),
+                    )
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                }
             }
         }
     }
