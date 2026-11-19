@@ -3,11 +3,12 @@ agp = "9.5.1"
 kotlin = "2.4.21"
 ksp = "2.3.14"
 coroutines = "1.11.0"
-serialization = "1.8.1"
+serialization = "1.13.0"
+# @pin Newer BOMs need compileSdk 37.1, which the Nix Android SDK does not offer yet.
 composeBom = "2026.09.00"
 materialIcons = "1.7.8"
 activity = "1.13.0"
-lifecycle = "2.11.0"
+lifecycle = "2.11.1"
 navigation = "2.10.2"
 coreKtx = "1.19.1"
 media3 = "1.11.1"
@@ -67,3 +68,6 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 room = { id = "androidx.room", version.ref = "room" }
+# Only for updating the versions in this file: ./gradlew versionCatalogUpdate
+versions = "com.github.ben-manes.versions:0.67.0"
+version-catalog-update = "nl.littlerobots.version-catalog-update:1.1.2"
