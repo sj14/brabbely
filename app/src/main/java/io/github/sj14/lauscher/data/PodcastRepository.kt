@@ -15,8 +15,10 @@ import io.github.sj14.lauscher.data.db.Podcast
 import io.github.sj14.lauscher.data.db.ShowNotes
 import io.github.sj14.lauscher.data.feed.ChaptersJson
 import io.github.sj14.lauscher.data.feed.FeedParser
+import io.github.sj14.lauscher.data.feed.ParsedChapter
 import io.github.sj14.lauscher.data.feed.ParsedEpisode
 import io.github.sj14.lauscher.data.feed.ParsedFeed
+import io.github.sj14.lauscher.data.feed.ShowNotesChapters
 import io.github.sj14.lauscher.data.opml.Opml
 import io.github.sj14.lauscher.data.opml.OpmlEntry
 import io.github.sj14.lauscher.download.Downloads
@@ -121,17 +123,39 @@ class PodcastRepository(
         }
     }
 
+    /**
+     * Loads the chapters of an episode when it starts playing, unless it has some already from the
+     * feed. They come from the chapter file the feed links to, or else from a table of contents in
+     * the show notes.
+     */
     suspend fun loadChapters(episode: Episode) = withContext(Dispatchers.IO) {
-        val url = episode.chaptersUrl ?: return@withContext
         if (chapterDao.count(episode.id) > 0) return@withContext
+        var chapters = emptyList<ParsedChapter>()
+        val url = episode.chaptersUrl
+        if (url != null) {
+            // If the file cannot be loaded now, the next start tries again instead of settling
+            // for the show notes.
+            chapters = loadChaptersFile(url) ?: return@withContext
+        }
+        if (chapters.isEmpty()) {
+            chapters = ShowNotesChapters.parse(showNotesDao.get(episode.id).orEmpty())
+        }
+        chapterDao.insertAll(chapters.map { Chapter(episode.id, it.startMs, it.title) })
+    }
+
+    /** The chapters in a Podcasting 2.0 chapter file, null if it could not be loaded. */
+    private fun loadChaptersFile(url: String): List<ParsedChapter>? {
         try {
-            val json = http.newCall(Request.Builder().url(url).build()).execute().use { it.body.string() }
-            chapterDao.insertAll(ChaptersJson.parse(json).map { Chapter(episode.id, it.startMs, it.title) })
-        } catch (e: CancellationException) {
-            throw e
+            val request = Request.Builder().url(url).build()
+            val json = http.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
+                response.body.string()
+            }
+            return ChaptersJson.parse(json)
         } catch (e: Exception) {
             // Chapters are optional; the episode plays fine without them.
             Log.w(LOG_TAG, "Loading chapters from $url failed", e)
+            return null
         }
     }
 
