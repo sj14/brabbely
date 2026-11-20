@@ -17,13 +17,13 @@
         see SystemBackupAgent.
     -->
     <application
-        android:name=".LauscherApp"
+        android:name=".BrabbelyApp"
         android:allowBackup="true"
         android:backupAgent=".data.backup.SystemBackupAgent"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Lauscher"
+        android:theme="@style/Theme.Brabbely"
         android:usesCleartextTraffic="true">
 
         <activity

@@ -6,13 +6,13 @@ plugins {
 }
 
 android {
-    namespace = "io.github.sj14.lauscher"
+    namespace = "io.github.sj14.brabbely"
     compileSdk = 37
     // Must match buildToolsVersion in flake.nix, the Nix SDK cannot download other versions.
     buildToolsVersion = "37.0.0"
 
     defaultConfig {
-        applicationId = "io.github.sj14.lauscher"
+        applicationId = "io.github.sj14.brabbely"
         minSdk = 26
         targetSdk = 37
         versionCode = 1

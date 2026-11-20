@@ -37,9 +37,9 @@ jobs:
           LAUSCHER_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           ./gradlew assembleRelease
-          cp app/build/outputs/apk/release/app-release.apk "lauscher-${GITHUB_REF_NAME}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "brabbely-${GITHUB_REF_NAME}.apk"
 
       - uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:
-          files: lauscher-${{ github.ref_name }}.apk
+          files: brabbely-${{ github.ref_name }}.apk
           generate_release_notes: true
