@@ -72,7 +72,14 @@ object FeedParser {
                     imageUrl = parseRssImage(parser)
             }
         }
-        return ParsedFeed(title.trim(), author.trim(), description.trim(), imageUrl, link, episodes)
+        return ParsedFeed(
+            title = decodeEntities(title.trim()),
+            author = decodeEntities(author.trim()),
+            description = description.trim(),
+            imageUrl = imageUrl,
+            link = link,
+            episodes = episodes,
+        )
     }
 
     private fun parseRssImage(parser: XmlPullParser): String? {
@@ -122,7 +129,7 @@ object FeedParser {
                     chaptersUrl = parser.getAttributeValue(null, "url") ?: parser.getAttributeValue(null, "href")
                 ns == NS_PSC && parser.name == "chapter" -> {
                     val start = parseDuration(parser.getAttributeValue(null, "start").orEmpty())
-                    val title = parser.getAttributeValue(null, "title").orEmpty()
+                    val title = decodeEntities(parser.getAttributeValue(null, "title").orEmpty())
                     chapters += ParsedChapter(start, title, imageUrl = parser.getAttributeValue(null, "image"))
                 }
             }
@@ -131,7 +138,7 @@ object FeedParser {
         val url = mediaUrl ?: return null
         return ParsedEpisode(
             guid = guid?.trim()?.ifEmpty { null } ?: url,
-            title = title.trim(),
+            title = decodeEntities(title.trim()),
             description = contentEncoded.ifBlank { description }.trim(),
             pubDate = pubDate,
             mediaUrl = url,
@@ -152,6 +159,35 @@ object FeedParser {
             if (eventType == XmlPullParser.END_DOCUMENT) break
         }
         return text.toString()
+    }
+
+    private val entityPattern = Regex("&(#[0-9]+|#[xX][0-9a-fA-F]+|amp|lt|gt|quot|apos);")
+
+    /**
+     * Decodes HTML entities that are left in a text after the XML parser decoded it once. Some
+     * feeds escape their titles twice, so "Rock &amp;amp; Roll" would otherwise show as
+     * "Rock &amp; Roll". Only plain-text fields go through this, not the HTML show notes.
+     */
+    internal fun decodeEntities(text: String): String {
+        if ('&' !in text) return text
+        return entityPattern.replace(text) { match ->
+            val entity = match.groupValues[1]
+            when {
+                entity == "amp" -> "&"
+                entity == "lt" -> "<"
+                entity == "gt" -> ">"
+                entity == "quot" -> "\""
+                entity == "apos" -> "'"
+                entity.startsWith("#x") || entity.startsWith("#X") -> codePointToString(entity.drop(2).toIntOrNull(16), match.value)
+                else -> codePointToString(entity.drop(1).toIntOrNull(), match.value)
+            }
+        }
+    }
+
+    /** The character of a numeric entity, or the entity unchanged if the number is no valid character. */
+    private fun codePointToString(codePoint: Int?, entity: String): String {
+        if (codePoint == null || !Character.isValidCodePoint(codePoint)) return entity
+        return String(Character.toChars(codePoint))
     }
 
     private val dateFormats = listOf(
