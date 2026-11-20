@@ -27,14 +27,14 @@ android {
     // The release key comes from environment variables, set by the GitHub release workflow.
     // Without them the release APK stays unsigned, which is what F-Droid expects:
     // it builds the app itself and signs it with its own key.
-    val keystorePath = System.getenv("LAUSCHER_KEYSTORE")
+    val keystorePath = System.getenv("BRABBELY_KEYSTORE")
     if (keystorePath != null) {
         signingConfigs {
             create("release") {
                 storeFile = file(keystorePath)
-                storePassword = System.getenv("LAUSCHER_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("LAUSCHER_KEY_ALIAS")
-                keyPassword = System.getenv("LAUSCHER_KEY_PASSWORD")
+                storePassword = System.getenv("BRABBELY_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("BRABBELY_KEY_ALIAS")
+                keyPassword = System.getenv("BRABBELY_KEY_PASSWORD")
             }
         }
     }

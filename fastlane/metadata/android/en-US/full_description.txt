@@ -1,0 +1,16 @@
+<p>A podcast app for Android: simple, free and without tracking. Brabbely plays audio and video podcasts, keeps your queue in order and makes falling asleep to a podcast easy.</p>
+
+<p><b>Features</b></p>
+<ul>
+<li>Search for podcasts or add any RSS feed</li>
+<li>Audio and video, video in full screen and picture-in-picture</li>
+<li>Queue, playback speed, skip silence and chapters with images</li>
+<li>Downloads of new episodes, only on Wi-Fi if you like; played episodes are deleted</li>
+<li>A sleep timer that fades out, can start by itself at night and starts over when you shake the phone</li>
+<li>Moving over from AntennaPod with what you have played, or from any app via OPML</li>
+<li>Daily backups to a folder of your choice</li>
+<li>English and German, Material You colors</li>
+</ul>
+
+<p><b>Privacy</b></p>
+<p>No ads, no tracking, no account and no Google Play Services. Brabbely only talks to the servers of your podcasts, and to Apple's podcast directory when you search.</p>

@@ -15,6 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # All history and tags, so the check can compare with the previous release.
+          fetch-depth: 0
+
+      - name: Check version and changelogs
+        run: ./scripts/check-release.sh "$GITHUB_REF_NAME"
 
       - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
@@ -31,13 +37,18 @@ jobs:
 
       - name: Build release APK
         env:
-          LAUSCHER_KEYSTORE: ${{ runner.temp }}/release.jks
-          LAUSCHER_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          LAUSCHER_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          LAUSCHER_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          BRABBELY_KEYSTORE: ${{ runner.temp }}/release.jks
+          BRABBELY_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          BRABBELY_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          BRABBELY_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          ./gradlew assembleRelease
+          ./gradlew testDebugUnitTest assembleRelease
           cp app/build/outputs/apk/release/app-release.apk "brabbely-${GITHUB_REF_NAME}.apk"
+
+      # The build writes the Room schema of a new database version to app/schemas.
+      # If a file appears or changes there, the schema was not committed with the release.
+      - name: Check that all Room schemas are committed
+        run: test -z "$(git status --porcelain -- app/schemas)"
 
       - uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:

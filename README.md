@@ -3,6 +3,13 @@
 A podcast app for Android: simple, free and without tracking. Brabbely plays audio and video
 podcasts, keeps your queue in order and makes falling asleep to a podcast easy.
 
+<p>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1-library.png" width="200" alt="Library">
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2-player.png" width="200" alt="Player with chapters and sleep timer">
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3-queue-dark.png" width="200" alt="Queue in the dark theme">
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4-search.png" width="200" alt="Search">
+</p>
+
 ## Features
 
 - Search for podcasts or add any RSS feed
@@ -22,8 +29,8 @@ servers of your podcasts, and to Apple's podcast directory when you search.
 
 ## Install
 
-Brabbely is not released yet. It will be available on F-Droid and on the GitHub releases page,
-for Android 8.0 and newer.
+Brabbely needs Android 8.0 or newer. APKs are published on the
+[releases page](https://github.com/sj14/brabbely/releases).
 
 ## License
 

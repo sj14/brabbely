@@ -90,13 +90,24 @@ One-time setup of the signing key:
    - `KEY_ALIAS`: `brabbely`
    - `KEY_PASSWORD`: the key password (the same as the keystore password, unless you chose another one)
 
-To publish a release, raise `versionCode` and `versionName` in `app/build.gradle.kts`, commit,
+To publish a release, raise `versionCode` and `versionName` in `app/build.gradle.kts`, write
+what changed to `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` and the German
+version to `de-DE/changelogs/<versionCode>.txt` and commit. Check that the release is ready,
 then tag and push:
 
 ```sh
+./scripts/check-release.sh v0.1.0
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
+The version stays written in `app/build.gradle.kts` instead of coming from the tag, because
+F-Droid reads it from there to find new releases. The release workflow runs the same check and
+stops when the tag does not match `versionName`, `versionCode` is not higher than at the
+previous tag or a changelog is missing. It also runs the unit tests and stops when the build
+wrote a Room schema to `app/schemas` that is not committed.
+
 F-Droid builds the app from source itself and signs it with its own key, so it does not use
-the APKs from GitHub.
+the APKs from GitHub. It takes the app's title, descriptions, icon, screenshots and changelogs
+from `fastlane/metadata/android/`; screenshots go to `en-US/images/phoneScreenshots/` and are
+shown for German too.

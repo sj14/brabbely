@@ -1,0 +1,16 @@
+<p>Eine Podcast-App für Android: schlicht, frei und ohne Tracking. Brabbely spielt Audio- und Video-Podcasts, hält deine Warteschlange in Ordnung und macht das Einschlafen mit einem Podcast leicht.</p>
+
+<p><b>Funktionen</b></p>
+<ul>
+<li>Podcasts suchen oder einen beliebigen RSS-Feed hinzufügen</li>
+<li>Audio und Video, Video im Vollbild und als Bild-im-Bild</li>
+<li>Warteschlange, Wiedergabegeschwindigkeit, Stille überspringen und Kapitel mit Bildern</li>
+<li>Neue Episoden herunterladen, auf Wunsch nur im WLAN; gehörte Episoden werden gelöscht</li>
+<li>Ein Sleep-Timer, der sanft ausblendet, nachts von selbst starten kann und durch Schütteln des Handys neu beginnt</li>
+<li>Umzug von AntennaPod samt dem, was du schon gehört hast, oder von jeder anderen App per OPML</li>
+<li>Tägliche Backups in einen Ordner deiner Wahl</li>
+<li>Deutsch und Englisch, Material-You-Farben</li>
+</ul>
+
+<p><b>Datenschutz</b></p>
+<p>Keine Werbung, kein Tracking, kein Konto und keine Google Play Services. Brabbely spricht nur mit den Servern deiner Podcasts und, wenn du suchst, mit Apples Podcast-Verzeichnis.</p>
