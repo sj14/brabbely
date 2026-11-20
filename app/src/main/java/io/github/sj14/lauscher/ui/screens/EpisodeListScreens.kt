@@ -62,7 +62,7 @@ fun NewEpisodesScreen(onOpenEpisode: (Long) -> Unit, onOpenSettings: () -> Unit)
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.new_episodes)) },
-                actions = { TabMenu(onOpenSettings) },
+                actions = { SettingsButton(onOpenSettings) },
             )
         },
     ) { padding ->
@@ -114,7 +114,7 @@ fun QueueScreen(onOpenEpisode: (Long) -> Unit, onOpenSettings: () -> Unit) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.queue)) }, actions = { TabMenu(onOpenSettings) })
+            TopAppBar(title = { Text(stringResource(R.string.queue)) }, actions = { SettingsButton(onOpenSettings) })
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->

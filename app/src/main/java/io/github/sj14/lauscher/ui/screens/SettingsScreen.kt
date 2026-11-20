@@ -66,6 +66,7 @@ import java.time.format.FormatStyle
 private val SKIP_SECONDS = listOf(5, 10, 15, 30, 45, 60)
 private val REFRESH_HOURS = listOf(1, 3, 6, 12, 24)
 private val FADE_SECONDS = listOf(0, 5, 10, 15, 30, 60)
+private val NEW_EPISODE_DAYS = listOf(3, 7, 14, 30, 60, 90)
 private val MARK_PLAYED_SECONDS = listOf(0, 15, 30, 60, 120, 300)
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -274,6 +275,12 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
                 checked = settings.sleepVolumeReset,
                 onChange = { update { repo.setSleepVolumeReset(it) } },
             )
+            SwitchSetting(
+                title = stringResource(R.string.sleep_unlocked),
+                summary = stringResource(R.string.sleep_unlocked_summary),
+                checked = settings.sleepPauseWhileUnlocked,
+                onChange = { update { repo.setSleepPauseWhileUnlocked(it) } },
+            )
             ChoiceSetting(
                 title = stringResource(R.string.sleep_fade),
                 description = stringResource(R.string.sleep_fade_summary),
@@ -306,6 +313,14 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
                 selected = settings.refreshIntervalHours,
                 label = { pluralStringResource(R.plurals.hours, it, it) },
                 onSelect = { update { repo.setRefreshInterval(it) } },
+            )
+            ChoiceSetting(
+                title = stringResource(R.string.new_episode_days),
+                description = stringResource(R.string.new_episode_days_summary),
+                options = NEW_EPISODE_DAYS,
+                selected = settings.newEpisodeDays,
+                label = { pluralStringResource(R.plurals.for_days, it, it) },
+                onSelect = { update { repo.setNewEpisodeDays(it) } },
             )
             ClickSetting(stringResource(R.string.downloads), onClick = onOpenDownloads)
 

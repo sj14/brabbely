@@ -17,6 +17,11 @@ import io.github.sj14.lauscher.data.feed.ShowNotesChapters
 import io.github.sj14.lauscher.download.Downloads
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -34,11 +39,19 @@ class PodcastRepository(
     private val showNotesDao = db.showNotesDao()
     private val chapterDao = db.chapterDao()
 
-    fun observeLibrary() = podcastDao.observeSubscribed(newSince())
+    /** The time from which on an episode counts as new, following the setting. */
+    private fun newSince(): Flow<Long> = settings.settings
+        .map { it.newEpisodeDays }
+        .distinctUntilChanged()
+        .map { days -> System.currentTimeMillis() - TimeUnit.DAYS.toMillis(days.toLong()) }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeLibrary() = newSince().flatMapLatest { podcastDao.observeSubscribed(it) }
     fun observePodcast(id: Long) = podcastDao.observe(id)
     fun observeEpisodes(podcastId: Long) = episodeDao.observeForPodcast(podcastId)
     fun observeEpisode(id: Long) = episodeDao.observeWithPodcast(id)
-    fun observeNew() = episodeDao.observeNew(newSince())
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeNew() = newSince().flatMapLatest { episodeDao.observeNew(it) }
     fun observeQueue() = episodeDao.observeQueue()
     fun observeDownloads() = episodeDao.observeDownloads()
     fun observeShowNotes(episodeId: Long) = showNotesDao.observe(episodeId)
@@ -251,10 +264,6 @@ class PodcastRepository(
     )
 
     companion object {
-        /** Episodes published within this time count as new. */
-        private val NEW_EPISODE_WINDOW = TimeUnit.DAYS.toMillis(30)
         private const val FEED_ATTEMPTS = 3
-
-        private fun newSince() = System.currentTimeMillis() - NEW_EPISODE_WINDOW
     }
 }

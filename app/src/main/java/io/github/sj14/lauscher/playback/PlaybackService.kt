@@ -113,6 +113,7 @@ class PlaybackService : MediaSessionService() {
             shakeThresholdG = new.sleepShakeSensitivity.thresholdG,
             vibrateOnShake = new.sleepShakeVibrate,
             fadeOutMs = new.sleepFadeSeconds * 1000L,
+            pauseWhileUnlocked = new.sleepPauseWhileUnlocked,
         )
         if (buttonsChanged) session.setMediaButtonPreferences(mediaButtons())
     }

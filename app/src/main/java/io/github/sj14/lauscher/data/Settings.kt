@@ -43,6 +43,8 @@ data class AppSettings(
     val wifiOnly: Boolean = true,
     val deletePlayed: Boolean = true,
     val refreshIntervalHours: Int = 6,
+    /** Unplayed episodes published within this many days count as new. */
+    val newEpisodeDays: Int = 30,
     val sleepTimerMinutes: Int = 30,
     val sleepAutoMode: SleepAutoMode = SleepAutoMode.OFF,
     /** Start and end of the time window for [SleepAutoMode.TIME_WINDOW], in minutes after midnight. */
@@ -51,6 +53,8 @@ data class AppSettings(
     val sleepShakeSensitivity: ShakeSensitivity = ShakeSensitivity.MEDIUM,
     val sleepShakeVibrate: Boolean = true,
     val sleepVolumeReset: Boolean = true,
+    /** The sleep timer only counts down while the phone is locked and starts over while it is unlocked. */
+    val sleepPauseWhileUnlocked: Boolean = false,
     /** How long the volume fades out before the sleep timer pauses, 0 for no fade-out. */
     val sleepFadeSeconds: Int = 15,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
@@ -88,10 +92,12 @@ class SettingsRepository(context: Context) {
         val queueAddPosition = stringPreferencesKey("queue_add_position")
         val pauseOnZeroVolume = booleanPreferencesKey("pause_on_zero_volume")
         val sleepVolumeReset = booleanPreferencesKey("sleep_volume_reset")
+        val sleepPauseWhileUnlocked = booleanPreferencesKey("sleep_pause_while_unlocked")
         val autoDownload = booleanPreferencesKey("auto_download")
         val wifiOnly = booleanPreferencesKey("wifi_only")
         val deletePlayed = booleanPreferencesKey("delete_played")
         val refreshInterval = intPreferencesKey("refresh_interval")
+        val newEpisodeDays = intPreferencesKey("new_episode_days")
         val sleepMinutes = intPreferencesKey("sleep_minutes")
         val sleepAutoMode = stringPreferencesKey("sleep_auto_mode")
         val sleepAutoStart = intPreferencesKey("sleep_auto_start")
@@ -117,10 +123,12 @@ class SettingsRepository(context: Context) {
                 ?: defaults.queueAddPosition,
             pauseOnZeroVolume = prefs.read(Keys.pauseOnZeroVolume) ?: defaults.pauseOnZeroVolume,
             sleepVolumeReset = prefs.read(Keys.sleepVolumeReset) ?: defaults.sleepVolumeReset,
+            sleepPauseWhileUnlocked = prefs.read(Keys.sleepPauseWhileUnlocked) ?: defaults.sleepPauseWhileUnlocked,
             autoDownload = prefs.read(Keys.autoDownload) ?: defaults.autoDownload,
             wifiOnly = prefs.read(Keys.wifiOnly) ?: defaults.wifiOnly,
             deletePlayed = prefs.read(Keys.deletePlayed) ?: defaults.deletePlayed,
             refreshIntervalHours = prefs.read(Keys.refreshInterval) ?: defaults.refreshIntervalHours,
+            newEpisodeDays = prefs.read(Keys.newEpisodeDays) ?: defaults.newEpisodeDays,
             sleepTimerMinutes = prefs.read(Keys.sleepMinutes) ?: defaults.sleepTimerMinutes,
             sleepAutoMode = enumOrNull<SleepAutoMode>(prefs.read(Keys.sleepAutoMode)) ?: defaults.sleepAutoMode,
             sleepAutoStartMinutes = prefs.read(Keys.sleepAutoStart) ?: defaults.sleepAutoStartMinutes,
@@ -163,6 +171,8 @@ class SettingsRepository(context: Context) {
     suspend fun setSkipSilence(enabled: Boolean) = store.edit { it[Keys.skipSilence] = enabled }
     suspend fun setPauseOnZeroVolume(enabled: Boolean) = store.edit { it[Keys.pauseOnZeroVolume] = enabled }
     suspend fun setSleepVolumeReset(enabled: Boolean) = store.edit { it[Keys.sleepVolumeReset] = enabled }
+    suspend fun setSleepPauseWhileUnlocked(enabled: Boolean) =
+        store.edit { it[Keys.sleepPauseWhileUnlocked] = enabled }
     suspend fun setQueueAddPosition(position: QueueAddPosition) =
         store.edit { it[Keys.queueAddPosition] = position.name }
     suspend fun setMarkPlayedRemaining(seconds: Int) = store.edit { it[Keys.markPlayedRemaining] = seconds }
@@ -171,6 +181,7 @@ class SettingsRepository(context: Context) {
     suspend fun setWifiOnly(enabled: Boolean) = store.edit { it[Keys.wifiOnly] = enabled }
     suspend fun setDeletePlayed(enabled: Boolean) = store.edit { it[Keys.deletePlayed] = enabled }
     suspend fun setRefreshInterval(hours: Int) = store.edit { it[Keys.refreshInterval] = hours }
+    suspend fun setNewEpisodeDays(days: Int) = store.edit { it[Keys.newEpisodeDays] = days }
     suspend fun setSleepMinutes(minutes: Int) = store.edit { it[Keys.sleepMinutes] = minutes }
     suspend fun setSleepAutoMode(mode: SleepAutoMode) = store.edit { it[Keys.sleepAutoMode] = mode.name }
     suspend fun setSleepAutoStart(minutes: Int) = store.edit { it[Keys.sleepAutoStart] = minutes }

@@ -1,5 +1,6 @@
 package io.github.sj14.lauscher.playback
 
+import android.app.KeyguardManager
 import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -9,6 +10,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.os.Build
+import android.os.PowerManager
 import androidx.media3.common.Player
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -54,8 +56,11 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
     private var shakeThresholdG: Float? = null
     private var vibrateOnShake = true
     private var fadeOutMs = 0L
+    private var pauseWhileUnlocked = false
 
     private val sensorManager = context.getSystemService(SensorManager::class.java)
+    private val powerManager = context.getSystemService(PowerManager::class.java)
+    private val keyguardManager = context.getSystemService(KeyguardManager::class.java)
     private var shakeListener: SensorEventListener? = null
 
     /** Called by the playback service, which owns the player. */
@@ -68,10 +73,11 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
         player = null
     }
 
-    fun configure(shakeThresholdG: Float?, vibrateOnShake: Boolean, fadeOutMs: Long) {
+    fun configure(shakeThresholdG: Float?, vibrateOnShake: Boolean, fadeOutMs: Long, pauseWhileUnlocked: Boolean) {
         this.shakeThresholdG = shakeThresholdG
         this.vibrateOnShake = vibrateOnShake
         this.fadeOutMs = fadeOutMs
+        this.pauseWhileUnlocked = pauseWhileUnlocked
         if (_state.value is SleepTimerState.Countdown) {
             if (shakeThresholdG != null) startShakeDetection() else stopShakeDetection()
         }
@@ -121,6 +127,12 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
             val current = _state.value as? SleepTimerState.Countdown ?: return
             val player = player ?: continue
             if (!player.isPlaying) continue
+            // Someone who unlocked the phone is awake: hold the timer at its full duration, so it
+            // starts over once the phone is locked. A screen woken by a notification stays locked.
+            if (pauseWhileUnlocked && isUnlocked()) {
+                reset()
+                continue
+            }
 
             val remaining = current.remainingMs - elapsed
             if (remaining <= 0) {
@@ -137,6 +149,8 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
             }
         }
     }
+
+    private fun isUnlocked(): Boolean = powerManager.isInteractive && !keyguardManager.isKeyguardLocked
 
     private fun stopCountdown() {
         countdownJob?.cancel()

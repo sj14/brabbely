@@ -12,7 +12,6 @@
     <!-- Short labels for the navigation bar. -->
     <string name="tab_queue">Queue</string>
     <string name="back">Back</string>
-    <string name="more_options">More options</string>
     <string name="cancel">Cancel</string>
 
     <!-- Library and podcasts -->
@@ -110,6 +109,8 @@ Find podcasts with + at the top, or import your subscriptions in the settings.</
     <string name="sleep_shake_vibrate_summary">A short vibration confirms that the timer was restarted</string>
     <string name="sleep_volume_reset">Restart with volume buttons</string>
     <string name="sleep_volume_reset_summary">Changing the volume restarts the running sleep timer</string>
+    <string name="sleep_unlocked">Pause while the phone is unlocked</string>
+    <string name="sleep_unlocked_summary">The timer only runs while the phone is locked and starts over each time it is unlocked</string>
     <string name="pause_on_zero_volume">Pause at volume zero</string>
     <string name="pause_on_zero_volume_summary">Turning the volume all the way down pauses playback; turning it up again within two minutes resumes it</string>
     <string name="sleep_fade">Fade out</string>
@@ -123,6 +124,8 @@ Find podcasts with + at the top, or import your subscriptions in the settings.</
     <string name="wifi_only">Download only on Wi-Fi</string>
     <string name="delete_played">Delete played episodes</string>
     <string name="refresh_interval">Check for new episodes</string>
+    <string name="new_episode_days">Episodes count as new</string>
+    <string name="new_episode_days_summary">Unplayed episodes published within this time are listed under New and counted in the number on a podcast\'s cover.</string>
     <string name="theme">Theme</string>
     <string name="theme_system">System default</string>
     <string name="theme_light">Light</string>
@@ -166,5 +169,9 @@ Find podcasts with + at the top, or import your subscriptions in the settings.</
     <plurals name="hours">
         <item quantity="one">Every hour</item>
         <item quantity="other">Every %d hours</item>
+    </plurals>
+    <plurals name="for_days">
+        <item quantity="one">For %d day</item>
+        <item quantity="other">For %d days</item>
     </plurals>
 </resources>

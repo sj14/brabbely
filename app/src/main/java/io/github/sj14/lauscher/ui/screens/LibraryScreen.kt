@@ -63,7 +63,7 @@ fun LibraryScreen(onOpenPodcast: (Long) -> Unit, onAddPodcast: () -> Unit, onOpe
                     IconButton(onClick = onAddPodcast) {
                         Icon(Icons.Rounded.Add, stringResource(R.string.add_podcast))
                     }
-                    TabMenu(onOpenSettings)
+                    SettingsButton(onOpenSettings)
                 },
             )
         },
@@ -119,7 +119,11 @@ private fun PodcastTile(item: PodcastWithCounts, onClick: () -> Unit) {
                         .padding(8.dp),
                     containerColor = MaterialTheme.colorScheme.primary,
                 ) {
-                    Text(item.unplayedCount.toString(), modifier = Modifier.padding(horizontal = 2.dp))
+                    Text(
+                        item.unplayedCount.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                    )
                 }
             }
         }
