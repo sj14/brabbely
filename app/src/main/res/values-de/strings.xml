@@ -160,6 +160,8 @@ Finde Podcasts über das + oben oder importiere deine Abos in den Einstellungen.
     <string name="opml_exported">Abos exportiert</string>
     <string name="version">Version %s</string>
     <string name="notification_channel_downloads">Downloads</string>
+    <string name="notification_channel_import">Import</string>
+    <string name="import_again_hint">Importiere dieselbe Datei später noch einmal, um sie hinzuzufügen.</string>
     <plurals name="seconds">
         <item quantity="one">%d Sekunde</item>
         <item quantity="other">%d Sekunden</item>

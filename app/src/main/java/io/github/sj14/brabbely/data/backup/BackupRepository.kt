@@ -26,7 +26,13 @@ class BackupRepository(
     private val podcastDao = db.podcastDao()
     private val episodeDao = db.episodeDao()
 
-    data class ImportResult(val imported: Int, val failed: Int)
+    /** [failedTitles] are the podcasts whose feed could not be loaded; importing again adds them. */
+    data class ImportResult(val imported: Int, val failedTitles: List<String>) {
+        val failed: Int get() = failedTitles.size
+    }
+
+    /** A podcast to subscribe to; the title is only for telling the user when its feed fails. */
+    private data class FeedToImport(val feedUrl: String, val title: String)
 
     suspend fun createBackup(output: OutputStream) = withContext(Dispatchers.IO) {
         val subscribed = podcastDao.getSubscribed()
@@ -62,7 +68,7 @@ class BackupRepository(
     }
 
     suspend fun importOpml(input: InputStream): ImportResult = withContext(Dispatchers.IO) {
-        subscribeAll(Opml.read(input).map { it.feedUrl })
+        subscribeAll(Opml.read(input).map { FeedToImport(it.feedUrl, it.title) })
     }
 
     suspend fun exportOpml(output: OutputStream) = withContext(Dispatchers.IO) {
@@ -77,7 +83,8 @@ class BackupRepository(
         val podcastsByUrl = backup.podcasts.associateBy { it.feedUrl }
         // Episode ids by feed URL and GUID, to rebuild the queue at the end.
         val episodeIds = mutableMapOf<String, Map<String, Long>>()
-        val result = subscribeAll(backup.podcasts.map { it.feedUrl }) { feedUrl, podcastId ->
+        val feeds = backup.podcasts.map { FeedToImport(it.feedUrl, it.title) }
+        val result = subscribeAll(feeds) { feedUrl, podcastId ->
             val ids = episodeDao.getKeys(podcastId).associate { it.guid to it.id }
             restoreProgress(podcastsByUrl.getValue(feedUrl), ids)
             episodeIds[feedUrl] = ids
@@ -93,28 +100,30 @@ class BackupRepository(
 
     /**
      * Subscribes to each feed and then runs [afterSubscribe] for it. A feed that fails, for example
-     * because it is gone, is skipped and counted; the others are still imported.
+     * because it is offline right now, is skipped and reported; the others are still imported.
+     * Importing the same file again later adds the skipped ones: podcasts that are already there
+     * are not loaded again.
      */
     private suspend fun subscribeAll(
-        feedUrls: List<String>,
+        feeds: List<FeedToImport>,
         afterSubscribe: suspend (feedUrl: String, podcastId: Long) -> Unit = { _, _ -> },
     ): ImportResult {
         var imported = 0
-        var failed = 0
-        for (feedUrl in feedUrls) {
+        val failedTitles = mutableListOf<String>()
+        for (feed in feeds) {
             try {
-                val podcastId = podcasts.preview(feedUrl)
+                val podcastId = podcasts.preview(feed.feedUrl)
                 podcasts.subscribe(podcastId)
-                afterSubscribe(feedUrl, podcastId)
+                afterSubscribe(feed.feedUrl, podcastId)
                 imported++
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.w(LOG_TAG, "Importing $feedUrl failed", e)
-                failed++
+                Log.w(LOG_TAG, "Importing ${feed.feedUrl} failed", e)
+                failedTitles += feed.title.ifBlank { feed.feedUrl }
             }
         }
-        return ImportResult(imported, failed)
+        return ImportResult(imported, failedTitles)
     }
 
     private suspend fun restoreProgress(podcast: PodcastBackup, episodeIds: Map<String, Long>) = db.withTransaction {

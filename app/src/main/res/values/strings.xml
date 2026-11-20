@@ -162,6 +162,8 @@ Find podcasts with + at the top, or import your subscriptions in the settings.</
     <string name="opml_exported">Subscriptions exported</string>
     <string name="version">Version %s</string>
     <string name="notification_channel_downloads">Downloads</string>
+    <string name="notification_channel_import">Import</string>
+    <string name="import_again_hint">Import the same file again later to add them.</string>
     <plurals name="seconds">
         <item quantity="one">%d second</item>
         <item quantity="other">%d seconds</item>

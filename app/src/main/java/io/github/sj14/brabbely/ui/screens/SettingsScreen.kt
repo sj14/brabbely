@@ -50,6 +50,7 @@ import io.github.sj14.brabbely.R
 import io.github.sj14.brabbely.data.QueueAddPosition
 import io.github.sj14.brabbely.data.backup.BackupFormat
 import io.github.sj14.brabbely.data.backup.BackupRepository
+import io.github.sj14.brabbely.data.backup.ImportFailedNotification
 import io.github.sj14.brabbely.data.ShakeSensitivity
 import io.github.sj14.brabbely.data.SleepAutoMode
 import io.github.sj14.brabbely.playback.SLEEP_TIMER_MINUTES
@@ -96,6 +97,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
                 var text = resources.getQuantityString(R.plurals.import_result, result.imported, result.imported)
                 if (result.failed > 0) {
                     text += "\n" + resources.getQuantityString(R.plurals.import_failed_feeds, result.failed, result.failed)
+                    ImportFailedNotification.show(appContext, result.failedTitles)
                 }
                 text
             } catch (e: Exception) {
