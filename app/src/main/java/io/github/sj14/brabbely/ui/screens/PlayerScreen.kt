@@ -69,6 +69,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.roundToIntRect
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
@@ -341,7 +342,7 @@ private fun VideoSurface(modifier: Modifier = Modifier, overlay: @Composable Box
     Box(
         modifier
             .aspectRatio(16f / 9f)
-            .onGloballyPositioned { activity?.setVideoBounds(it.boundsInWindow().toAndroidRect()) }
+            .onGloballyPositioned { activity?.setVideoBounds(it.boundsInWindow().roundToIntRect().toAndroidRect()) }
             .clip(RoundedCornerShape(16.dp))
             .background(Color.Black),
     ) {

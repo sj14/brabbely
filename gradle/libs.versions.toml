@@ -62,5 +62,5 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 room = { id = "androidx.room", version.ref = "room" }
 # Only for updating the versions in this file: ./gradlew versionCatalogUpdate
-versions = "com.github.ben-manes.versions:0.67.0"
+versions = "io.github.ben-manes.versions:0.67.0"
 version-catalog-update = "nl.littlerobots.version-catalog-update:1.1.2"
