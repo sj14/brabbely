@@ -162,15 +162,6 @@ private fun PodcastTile(item: PodcastWithCounts, onClick: () -> Unit) {
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-        if (item.podcast.author.isNotEmpty()) {
-            Text(
-                item.podcast.author,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
     }
 
     if (confirmUnsubscribe) {
