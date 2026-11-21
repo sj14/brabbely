@@ -132,6 +132,8 @@ Find podcasts with + at the top, or import your subscriptions in the settings.</
     <string name="theme_dark">Dark</string>
     <string name="dynamic_color">Colors from wallpaper</string>
     <string name="dynamic_color_summary">Material You</string>
+    <string name="library_columns">Podcasts per row</string>
+    <string name="library_columns_summary">When the phone is held sideways, more podcasts fit in a row.</string>
     <string name="language">Language</string>
     <string name="language_summary">Choose the language of the app</string>
     <string name="backup_create">Create backup</string>

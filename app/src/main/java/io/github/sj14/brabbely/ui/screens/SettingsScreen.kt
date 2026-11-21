@@ -68,6 +68,7 @@ private val SKIP_SECONDS = listOf(5, 10, 15, 30, 45, 60)
 private val REFRESH_HOURS = listOf(1, 3, 6, 12, 24)
 private val FADE_SECONDS = listOf(0, 5, 10, 15, 30, 60)
 private val NEW_EPISODE_DAYS = listOf(3, 7, 14, 30, 60, 90)
+private val LIBRARY_COLUMNS = listOf(2, 3, 4, 5)
 private val MARK_PLAYED_SECONDS = listOf(0, 15, 30, 60, 120, 300)
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -339,6 +340,14 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
                     }
                 },
                 onSelect = { update { repo.setThemeMode(it) } },
+            )
+            ChoiceSetting(
+                title = stringResource(R.string.library_columns),
+                description = stringResource(R.string.library_columns_summary),
+                options = LIBRARY_COLUMNS,
+                selected = settings.libraryColumns,
+                label = { it.toString() },
+                onSelect = { update { repo.setLibraryColumns(it) } },
             )
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 SwitchSetting(

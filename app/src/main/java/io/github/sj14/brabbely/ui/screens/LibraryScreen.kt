@@ -34,9 +34,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.sj14.brabbely.R
 import io.github.sj14.brabbely.data.db.PodcastWithCounts
 import io.github.sj14.brabbely.ui.LocalContainer
@@ -54,6 +57,7 @@ import kotlinx.coroutines.launch
 fun LibraryScreen(onOpenPodcast: (Long) -> Unit, onAddPodcast: () -> Unit, onOpenSettings: () -> Unit) {
     val container = LocalContainer.current
     val podcasts by rememberScreenData { container.repository.observeLibrary() }
+    val settings by container.settings.settings.collectAsStateWithLifecycle(null)
 
     Scaffold(
         topBar = {
@@ -69,6 +73,7 @@ fun LibraryScreen(onOpenPodcast: (Long) -> Unit, onAddPodcast: () -> Unit, onOpe
         },
     ) { padding ->
         val list = podcasts ?: return@Scaffold
+        val columns = settings?.libraryColumns ?: return@Scaffold
         RefreshAllBox(Modifier.padding(padding)) {
             if (list.isEmpty()) {
                 EmptyState(stringResource(R.string.library_empty)) {
@@ -80,9 +85,9 @@ fun LibraryScreen(onOpenPodcast: (Long) -> Unit, onAddPodcast: () -> Unit, onOpe
                 }
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 150.dp),
-                    contentPadding = PaddingValues(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    columns = GridCells.Adaptive(minSize = tileWidth(columns)),
+                    contentPadding = PaddingValues(GRID_SPACING),
+                    horizontalArrangement = Arrangement.spacedBy(GRID_SPACING),
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                     modifier = Modifier.fillMaxSize(),
                 ) {
@@ -93,6 +98,21 @@ fun LibraryScreen(onOpenPodcast: (Long) -> Unit, onAddPodcast: () -> Unit, onOpe
             }
         }
     }
+}
+
+private val GRID_SPACING = 16.dp
+
+/**
+ * The width of a tile so that [columns] tiles fit side by side when the phone is held upright.
+ * Held sideways or on a tablet, the grid then fits in more tiles of about this width.
+ */
+@Composable
+private fun tileWidth(columns: Int): Dp {
+    val uprightWidth = LocalConfiguration.current.smallestScreenWidthDp.dp
+    val spacing = GRID_SPACING * (columns + 1)
+    // Rounding to whole pixels must not leave the last tile a fraction too wide to fit.
+    val roundingMargin = 1.dp
+    return (uprightWidth - spacing) / columns - roundingMargin
 }
 
 /** A long press opens the podcast's actions. */

@@ -130,6 +130,8 @@ Finde Podcasts über das + oben oder importiere deine Abos in den Einstellungen.
     <string name="theme_dark">Dunkel</string>
     <string name="dynamic_color">Farben vom Hintergrundbild</string>
     <string name="dynamic_color_summary">Material You</string>
+    <string name="library_columns">Podcasts pro Reihe</string>
+    <string name="library_columns_summary">Im Querformat passen mehr Podcasts in eine Reihe.</string>
     <string name="language">Sprache</string>
     <string name="language_summary">Sprache der App wählen</string>
     <string name="backup_create">Backup erstellen</string>

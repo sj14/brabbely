@@ -59,6 +59,8 @@ data class AppSettings(
     val sleepFadeSeconds: Int = 15,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
+    /** How many podcasts the library shows side by side when the phone is held upright. */
+    val libraryColumns: Int = 3,
     /** Folder (a document tree URI) for daily backups, null if automatic backups are off. */
     val autoBackupFolder: String? = null,
 )
@@ -107,6 +109,7 @@ class SettingsRepository(context: Context) {
         val sleepShakeVibrate = booleanPreferencesKey("sleep_shake_vibrate")
         val themeMode = stringPreferencesKey("theme_mode")
         val dynamicColor = booleanPreferencesKey("dynamic_color")
+        val libraryColumns = intPreferencesKey("library_columns")
         val autoBackupFolder = stringPreferencesKey("auto_backup_folder")
     }
 
@@ -139,6 +142,7 @@ class SettingsRepository(context: Context) {
             sleepShakeVibrate = prefs.read(Keys.sleepShakeVibrate) ?: defaults.sleepShakeVibrate,
             themeMode = enumOrNull<ThemeMode>(prefs.read(Keys.themeMode)) ?: defaults.themeMode,
             dynamicColor = prefs.read(Keys.dynamicColor) ?: defaults.dynamicColor,
+            libraryColumns = prefs.read(Keys.libraryColumns) ?: defaults.libraryColumns,
             autoBackupFolder = prefs.read(Keys.autoBackupFolder),
         )
     }
@@ -194,4 +198,5 @@ class SettingsRepository(context: Context) {
         if (uri == null) prefs.remove(Keys.autoBackupFolder) else prefs[Keys.autoBackupFolder] = uri
     }
     suspend fun setDynamicColor(enabled: Boolean) = store.edit { it[Keys.dynamicColor] = enabled }
+    suspend fun setLibraryColumns(columns: Int) = store.edit { it[Keys.libraryColumns] = columns }
 }
