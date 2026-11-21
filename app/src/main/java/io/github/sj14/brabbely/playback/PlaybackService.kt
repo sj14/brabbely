@@ -83,6 +83,22 @@ class PlaybackService : MediaSessionService() {
         scope.launch {
             container.settings.settings.collect { applySettings(it) }
         }
+        scope.launch { restoreLastPlayed() }
+    }
+
+    /**
+     * Android stops the service a while after playback was paused, for example by the sleep timer,
+     * and the new one starts with an empty player. Loading the last episode again keeps the player
+     * screen filled. It is not prepared, so nothing is loaded and no notification shows until
+     * something plays it; Media3 prepares it then.
+     */
+    private suspend fun restoreLastPlayed() {
+        val item = container.database.episodeDao().getLastPlayed() ?: return
+        // A finished episode has left the queue; playing it would put it back there.
+        if (item.episode.played) return
+        // A controller may have set an episode while the database was read.
+        if (player.mediaItemCount > 0) return
+        player.setMediaItem(item.toMediaItem(), item.episode.position)
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession = session
@@ -220,6 +236,8 @@ class PlaybackService : MediaSessionService() {
             .setArtist(podcast.title)
             .setAlbumTitle(podcast.title)
             .setArtworkUri(imageUrl?.toUri())
+            // Known before the player is prepared, see restoreLastPlayed.
+            .setDurationMs(episode.duration.takeIf { it > 0 })
             .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
             .build()
         return MediaItem.Builder()

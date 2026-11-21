@@ -97,12 +97,13 @@ class PlayerConnection(private val context: Context) {
     }
 
     private fun updateState(player: Player) {
-        val duration = player.duration
+        // An episode that is not prepared yet has no duration in the player, only in its metadata.
+        val duration = if (player.duration != C.TIME_UNSET) player.duration else player.mediaMetadata.durationMs ?: 0
         _state.value = PlayerState(
             episodeId = player.currentMediaItem?.mediaId?.toLongOrNull(),
             isPlaying = player.isPlaying,
             isBuffering = player.playbackState == Player.STATE_BUFFERING,
-            durationMs = if (duration == C.TIME_UNSET) 0 else duration,
+            durationMs = duration,
             hasVideo = player.currentTracks.isTypeSelected(C.TRACK_TYPE_VIDEO),
         )
     }
