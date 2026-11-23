@@ -129,7 +129,7 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
             if (!player.isPlaying) continue
             // Someone who unlocked the phone is awake: hold the timer at its full duration, so it
             // starts over once the phone is locked. A screen woken by a notification stays locked.
-            if (pauseWhileUnlocked && isUnlocked()) {
+            if (isHeldWhileUnlocked()) {
                 reset()
                 continue
             }
@@ -150,7 +150,9 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
         }
     }
 
-    private fun isUnlocked(): Boolean = powerManager.isInteractive && !keyguardManager.isKeyguardLocked
+    /** Whether the timer is held at its full duration because the phone is unlocked. */
+    private fun isHeldWhileUnlocked(): Boolean =
+        pauseWhileUnlocked && powerManager.isInteractive && !keyguardManager.isKeyguardLocked
 
     private fun stopCountdown() {
         countdownJob?.cancel()
@@ -175,6 +177,8 @@ class SleepTimer(private val context: Context, private val scope: CoroutineScope
                 val now = System.currentTimeMillis()
                 val threshold = shakeThresholdG ?: return
                 if (gForce > threshold && now - lastShake > SHAKE_DEBOUNCE_MS) {
+                    // The timer is held anyway, and vibrating while someone uses the phone is annoying.
+                    if (isHeldWhileUnlocked()) return
                     lastShake = now
                     reset()
                     if (vibrateOnShake) vibrate()
