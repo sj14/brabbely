@@ -17,6 +17,12 @@
     <!-- Library and podcasts -->
     <string name="library_empty">No subscriptions yet.
 Find podcasts with + at the top, or import your subscriptions in the settings.</string>
+    <string name="library_search">Search subscriptions</string>
+    <string name="library_search_hint">Podcasts and episodes</string>
+    <string name="library_search_no_results">No podcasts or episodes found.</string>
+    <string name="clear_search">Clear search</string>
+    <string name="podcasts">Podcasts</string>
+    <string name="episodes">Episodes</string>
     <string name="add_podcast">Add podcast</string>
     <string name="find_podcasts">Find podcasts</string>
     <string name="subscribe">Subscribe</string>

@@ -6,6 +6,7 @@ import io.github.sj14.brabbely.LOG_TAG
 import io.github.sj14.brabbely.data.db.AppDatabase
 import io.github.sj14.brabbely.data.db.Chapter
 import io.github.sj14.brabbely.data.db.Episode
+import io.github.sj14.brabbely.data.db.EpisodeWithPodcast
 import io.github.sj14.brabbely.data.db.Podcast
 import io.github.sj14.brabbely.data.db.ShowNotes
 import io.github.sj14.brabbely.data.feed.ChaptersJson
@@ -56,6 +57,15 @@ class PodcastRepository(
     fun observeDownloads() = episodeDao.observeDownloads()
     fun observeShowNotes(episodeId: Long) = showNotesDao.observe(episodeId)
     fun observeChapters(episodeId: Long) = chapterDao.observe(episodeId)
+
+    /** The newest episodes of subscribed podcasts whose title contains [text], ignoring the case of ASCII letters. */
+    fun searchEpisodes(text: String): Flow<List<EpisodeWithPodcast>> {
+        val pattern = text
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
+        return episodeDao.searchSubscribed(pattern, EPISODE_SEARCH_LIMIT)
+    }
 
     /**
      * Loads a feed into the database without subscribing, so it can be previewed.
@@ -265,5 +275,7 @@ class PodcastRepository(
 
     companion object {
         private const val FEED_ATTEMPTS = 3
+        /** More results than this are of little use; the user had better type a longer search. */
+        private const val EPISODE_SEARCH_LIMIT = 100
     }
 }

@@ -15,6 +15,12 @@
     <!-- Library and podcasts -->
     <string name="library_empty">Noch keine Abos.
 Finde Podcasts über das + oben oder importiere deine Abos in den Einstellungen.</string>
+    <string name="library_search">Abos durchsuchen</string>
+    <string name="library_search_hint">Podcasts und Episoden</string>
+    <string name="library_search_no_results">Keine Podcasts oder Episoden gefunden.</string>
+    <string name="clear_search">Suche leeren</string>
+    <string name="podcasts">Podcasts</string>
+    <string name="episodes">Episoden</string>
     <string name="add_podcast">Podcast hinzufügen</string>
     <string name="find_podcasts">Podcasts finden</string>
     <string name="subscribe">Abonnieren</string>

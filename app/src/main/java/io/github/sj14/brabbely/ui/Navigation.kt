@@ -161,7 +161,12 @@ fun BrabbelyNavigation(openPlayer: Boolean, onPlayerOpened: () -> Unit) {
                 val openSettings = { navController.navigate(Routes.SETTINGS) }
 
                 composable(Routes.LIBRARY) {
-                    LibraryScreen(onOpenPodcast = openPodcast, onAddPodcast = openSearch, onOpenSettings = openSettings)
+                    LibraryScreen(
+                        onOpenPodcast = openPodcast,
+                        onOpenEpisode = openEpisode,
+                        onAddPodcast = openSearch,
+                        onOpenSettings = openSettings,
+                    )
                 }
                 composable(Routes.NEW) {
                     NewEpisodesScreen(onOpenEpisode = openEpisode, onOpenSettings = openSettings)

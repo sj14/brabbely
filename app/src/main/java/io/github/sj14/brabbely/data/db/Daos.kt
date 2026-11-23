@@ -62,6 +62,17 @@ interface EpisodeDao {
     )
     fun observeNew(newSince: Long): Flow<List<EpisodeWithPodcast>>
 
+    /** [pattern] is matched with LIKE, so % and _ in it must be escaped with a backslash. */
+    @Transaction
+    @Query(
+        """
+        SELECT e.* FROM episodes e JOIN podcasts p ON p.id = e.podcastId
+        WHERE p.subscribed = 1 AND e.title LIKE '%' || :pattern || '%' ESCAPE '\'
+        ORDER BY e.pubDate DESC LIMIT :limit
+        """,
+    )
+    fun searchSubscribed(pattern: String, limit: Int): Flow<List<EpisodeWithPodcast>>
+
     @Transaction
     @Query("SELECT * FROM episodes WHERE queuePosition IS NOT NULL ORDER BY queuePosition")
     fun observeQueue(): Flow<List<EpisodeWithPodcast>>
