@@ -1,4 +1,11 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["local>sj14/renovate-config"]
+  "extends": ["local>sj14/renovate-config"],
+  "packageRules": [
+    {
+      "description": "Newer BOMs need compileSdk 37.1, which the Nix Android SDK does not offer yet. CI does not use the Nix SDK, so it would not catch this.",
+      "matchPackageNames": ["androidx.compose:compose-bom"],
+      "enabled": false
+    }
+  ]
 }

@@ -32,14 +32,11 @@ emulator -avd pixel
 
 ## Updating dependencies
 
-```sh
-./gradlew versionCatalogUpdate                # newest stable versions into gradle/libs.versions.toml
-./gradlew versionCatalogUpdate --interactive  # only list them, apply with --apply
-```
-
-A version marked `# @pin` in `gradle/libs.versions.toml` is kept; the comment says why. The JDK
-and the Android SDK come from the Nix flake, which follows the nixpkgs revision of the system
-flake, so a new Android platform needs a newer nixpkgs there first.
+Renovate opens a pull request for each new version and merges it once CI passes. A dependency
+that must stay at its version is excluded in `renovate.json`, with the reason next to the version
+in `gradle/libs.versions.toml`. The JDK and the Android SDK come from the Nix flake, which follows
+the nixpkgs revision of the system flake, so a new Android platform needs a newer nixpkgs there
+first.
 
 ## Tests
 
