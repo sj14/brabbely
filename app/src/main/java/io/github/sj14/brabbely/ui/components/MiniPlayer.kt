@@ -10,9 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -80,11 +77,7 @@ fun MiniPlayer(onOpen: () -> Unit, modifier: Modifier = Modifier) {
                     )
                 }
                 IconButton(onClick = connection::togglePlayPause) {
-                    Icon(
-                        if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                        contentDescription = stringResource(if (state.isPlaying) R.string.pause else R.string.play),
-                        modifier = Modifier.size(32.dp),
-                    )
+                    PlayPauseIcon(state.showPause, state.isBuffering, size = 32.dp)
                 }
                 IconButton(onClick = connection::skipForward) {
                     Icon(skipForwardIcon(), contentDescription = stringResource(R.string.skip_forward))

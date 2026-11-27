@@ -3,9 +3,12 @@ package io.github.sj14.brabbely.playback
 import android.content.ComponentName
 import android.content.Context
 import android.os.Bundle
+import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.common.util.Util
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionToken
@@ -18,12 +21,16 @@ import kotlinx.coroutines.flow.asStateFlow
 data class PlayerState(
     val episodeId: Long? = null,
     val isPlaying: Boolean = false,
+    /** Playback is wanted, so the play/pause button shows pause, also while the episode still loads. */
+    val showPause: Boolean = false,
+    /** Playback is wanted but waits for data, e.g. right after tapping play on a streamed episode. */
     val isBuffering: Boolean = false,
     val durationMs: Long = 0,
     val hasVideo: Boolean = false,
 )
 
 /** The UI side of playback: a MediaController connected to [PlaybackService]. */
+@OptIn(UnstableApi::class)
 class PlayerConnection(private val context: Context) {
     private var controllerFuture: ListenableFuture<MediaController>? = null
 
@@ -72,7 +79,7 @@ class PlayerConnection(private val context: Context) {
     /** Pauses the episode if it is the one playing, otherwise plays it. */
     fun playOrPause(episodeId: Long) {
         val state = _state.value
-        if (state.episodeId == episodeId && state.isPlaying) {
+        if (state.episodeId == episodeId && state.showPause) {
             _controller.value?.pause()
         } else {
             play(episodeId)
@@ -81,7 +88,7 @@ class PlayerConnection(private val context: Context) {
 
     fun togglePlayPause() {
         val controller = _controller.value ?: return
-        if (controller.isPlaying) controller.pause() else controller.play()
+        Util.handlePlayPauseButtonAction(controller)
     }
 
     fun seekTo(positionMs: Long) {
@@ -102,7 +109,8 @@ class PlayerConnection(private val context: Context) {
         _state.value = PlayerState(
             episodeId = player.currentMediaItem?.mediaId?.toLongOrNull(),
             isPlaying = player.isPlaying,
-            isBuffering = player.playbackState == Player.STATE_BUFFERING,
+            showPause = !Util.shouldShowPlayButton(player),
+            isBuffering = player.playWhenReady && player.playbackState == Player.STATE_BUFFERING,
             durationMs = duration,
             hasVideo = player.currentTracks.isTypeSelected(C.TRACK_TYPE_VIDEO),
         )

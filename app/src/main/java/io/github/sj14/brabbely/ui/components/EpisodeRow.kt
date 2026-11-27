@@ -17,8 +17,6 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.ErrorOutline
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -67,7 +65,8 @@ fun EpisodeRow(
     val container = LocalContainer.current
     val playerState by container.playerConnection.state.collectAsStateWithLifecycle()
     val isCurrent = playerState.episodeId == episode.id
-    val isPlaying = isCurrent && playerState.isPlaying
+    val showPause = isCurrent && playerState.showPause
+    val isLoading = isCurrent && playerState.isBuffering
     var menuOpen by remember { mutableStateOf(false) }
 
     Box(modifier) {
@@ -136,10 +135,7 @@ fun EpisodeRow(
                 onClick = { container.playerConnection.playOrPause(episode.id) },
                 shape = CircleShape,
             ) {
-                Icon(
-                    if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                    contentDescription = stringResource(if (isPlaying) R.string.pause else R.string.play),
-                )
+                PlayPauseIcon(showPause, isLoading)
             }
         }
         EpisodeMenu(episode, expanded = menuOpen, onDismiss = { menuOpen = false })

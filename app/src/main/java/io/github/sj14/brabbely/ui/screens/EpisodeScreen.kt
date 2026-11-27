@@ -15,8 +15,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.PlaylistRemove
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -41,6 +39,7 @@ import io.github.sj14.brabbely.ui.LocalContainer
 import io.github.sj14.brabbely.ui.components.Artwork
 import io.github.sj14.brabbely.ui.components.DownloadButton
 import io.github.sj14.brabbely.ui.components.HtmlText
+import io.github.sj14.brabbely.ui.components.PlayPauseIcon
 import io.github.sj14.brabbely.ui.formatDate
 import io.github.sj14.brabbely.ui.formatDuration
 import kotlinx.coroutines.launch
@@ -59,7 +58,9 @@ fun EpisodeScreen(episodeId: Long, onBack: () -> Unit, onOpenPodcast: (Long) -> 
     Scaffold(topBar = { TopAppBar(title = {}, navigationIcon = { BackButton(onBack) }) }) { padding ->
         val current = item ?: return@Scaffold
         val episode = current.episode
-        val isPlaying = playerState.episodeId == episode.id && playerState.isPlaying
+        val isCurrent = playerState.episodeId == episode.id
+        val showPause = isCurrent && playerState.showPause
+        val isLoading = isCurrent && playerState.isBuffering
 
         Column(
             Modifier
@@ -98,9 +99,9 @@ fun EpisodeScreen(episodeId: Long, onBack: () -> Unit, onOpenPodcast: (Long) -> 
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { container.playerConnection.playOrPause(episode.id) }) {
-                    Icon(if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null)
+                    PlayPauseIcon(showPause, isLoading, describe = false)
                     Spacer(Modifier.width(6.dp))
-                    Text(stringResource(if (isPlaying) R.string.pause else R.string.play))
+                    Text(stringResource(if (showPause) R.string.pause else R.string.play))
                 }
                 DownloadButton(episode)
                 if (episode.queuePosition == null) {

@@ -28,8 +28,6 @@ import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.FullscreenExit
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -87,6 +85,7 @@ import io.github.sj14.brabbely.MainActivity
 import io.github.sj14.brabbely.R
 import io.github.sj14.brabbely.ui.LocalContainer
 import io.github.sj14.brabbely.ui.components.Artwork
+import io.github.sj14.brabbely.ui.components.PlayPauseIcon
 import io.github.sj14.brabbely.ui.components.VideoView
 import io.github.sj14.brabbely.ui.components.rememberPlaybackPosition
 import io.github.sj14.brabbely.ui.components.skipBackIcon
@@ -213,11 +212,7 @@ fun PlayerScreen(onClose: () -> Unit, onShowEpisode: (Long) -> Unit) {
                     modifier = Modifier.size(84.dp),
                     colors = IconButtonDefaults.filledIconButtonColors(),
                 ) {
-                    Icon(
-                        if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                        stringResource(if (state.isPlaying) R.string.pause else R.string.play),
-                        Modifier.size(48.dp),
-                    )
+                    PlayPauseIcon(state.showPause, state.isBuffering, size = 48.dp)
                 }
                 IconButton(onClick = connection::skipForward, Modifier.size(64.dp)) {
                     Icon(skipForwardIcon(), stringResource(R.string.skip_forward), Modifier.size(36.dp))
