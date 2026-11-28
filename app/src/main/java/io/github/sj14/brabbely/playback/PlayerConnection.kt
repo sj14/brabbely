@@ -91,16 +91,21 @@ class PlayerConnection(private val context: Context) {
         Util.handlePlayPauseButtonAction(controller)
     }
 
+    /**
+     * Seeks in the service instead of through the controller: an episode that was restored after
+     * a restart is not prepared yet, and until then the controller ignores seeks.
+     */
     fun seekTo(positionMs: Long) {
-        _controller.value?.seekTo(positionMs)
+        val args = Bundle().apply { putLong(PlaybackService.EXTRA_POSITION_MS, positionMs) }
+        sendCommand(PlaybackService.COMMAND_SEEK_TO, args)
     }
 
     fun skipBack() = sendCommand(PlaybackService.COMMAND_SKIP_BACK)
 
     fun skipForward() = sendCommand(PlaybackService.COMMAND_SKIP_FORWARD)
 
-    private fun sendCommand(action: String) {
-        _controller.value?.sendCustomCommand(SessionCommand(action, Bundle.EMPTY), Bundle.EMPTY)
+    private fun sendCommand(action: String, args: Bundle = Bundle.EMPTY) {
+        _controller.value?.sendCustomCommand(SessionCommand(action, Bundle.EMPTY), args)
     }
 
     private fun updateState(player: Player) {

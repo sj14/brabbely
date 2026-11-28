@@ -180,7 +180,16 @@ class PlaybackService : MediaSessionService() {
 
     private fun skipBy(milliseconds: Long) {
         val duration = player.duration.takeIf { it != C.TIME_UNSET } ?: Long.MAX_VALUE
-        player.seekTo((player.currentPosition + milliseconds).coerceIn(0, duration))
+        seekTo((player.currentPosition + milliseconds).coerceIn(0, duration))
+    }
+
+    /**
+     * Unlike a controller, the player itself also seeks in an episode that is not prepared yet,
+     * see restoreLastPlayed. Saving the position right away keeps it if nothing plays afterwards.
+     */
+    private fun seekTo(positionMs: Long) {
+        player.seekTo(positionMs)
+        savePosition()
     }
 
     private fun currentEpisodeId(): Long? = player.currentMediaItem?.mediaId?.toLongOrNull()
@@ -308,6 +317,7 @@ class PlaybackService : MediaSessionService() {
             val commands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
                 .add(SessionCommand(COMMAND_SKIP_BACK, Bundle.EMPTY))
                 .add(SessionCommand(COMMAND_SKIP_FORWARD, Bundle.EMPTY))
+                .add(SessionCommand(COMMAND_SEEK_TO, Bundle.EMPTY))
                 .build()
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
                 .setAvailableSessionCommands(commands)
@@ -323,6 +333,7 @@ class PlaybackService : MediaSessionService() {
             when (customCommand.customAction) {
                 COMMAND_SKIP_BACK -> skipBy(-settings.skipBackSeconds * 1000L)
                 COMMAND_SKIP_FORWARD -> skipBy(settings.skipForwardSeconds * 1000L)
+                COMMAND_SEEK_TO -> seekTo(args.getLong(EXTRA_POSITION_MS))
             }
             return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
         }
@@ -368,6 +379,8 @@ class PlaybackService : MediaSessionService() {
     companion object {
         const val COMMAND_SKIP_BACK = "skip_back"
         const val COMMAND_SKIP_FORWARD = "skip_forward"
+        const val COMMAND_SEEK_TO = "seek_to"
+        const val EXTRA_POSITION_MS = "position_ms"
         private const val POSITION_SAVE_INTERVAL_MS = 10_000L
         private const val RESUME_AFTER_VOLUME_PAUSE_MS = 2 * 60_000L
 
