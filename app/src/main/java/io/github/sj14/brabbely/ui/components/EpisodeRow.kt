@@ -235,7 +235,9 @@ private fun EpisodeMenu(episode: Episode, expanded: Boolean, onDismiss: () -> Un
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
         MenuItem(downloadActionLabel(episode.downloadState)) { run { toggleDownload(container, episode) } }
         if (episode.queuePosition == null) {
-            MenuItem(R.string.play_next) { run { repository.playNext(episode.id) } }
+            MenuItem(R.string.play_next) {
+                run { repository.playNext(episode.id, container.playerConnection.state.value.episodeId) }
+            }
             MenuItem(R.string.add_to_queue) { run { repository.enqueue(episode.id) } }
         } else {
             MenuItem(R.string.remove_from_queue) { run { repository.removeFromQueue(episode.id) } }

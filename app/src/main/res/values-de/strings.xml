@@ -7,8 +7,6 @@
     <string name="discover">Entdecken</string>
     <string name="settings">Einstellungen</string>
     <string name="downloads">Downloads</string>
-    <!-- Short labels for the navigation bar. -->
-    <string name="tab_queue">Playlist</string>
     <string name="back">Zurück</string>
     <string name="cancel">Abbrechen</string>
 
@@ -39,8 +37,8 @@ Finde Podcasts über das + oben oder importiere deine Abos in den Einstellungen.
     <string name="play">Abspielen</string>
     <string name="pause">Pause</string>
     <string name="play_next">Als Nächstes abspielen</string>
-    <string name="add_to_queue">Zur Warteschlange</string>
-    <string name="remove_from_queue">Aus Warteschlange entfernen</string>
+    <string name="add_to_queue">Zur Warteschlange hinzufügen</string>
+    <string name="remove_from_queue">Aus der Warteschlange entfernen</string>
     <string name="mark_played">Als gehört markieren</string>
     <string name="mark_unplayed">Als ungehört markieren</string>
     <string name="download">Herunterladen</string>
@@ -50,7 +48,7 @@ Finde Podcasts über das + oben oder importiere deine Abos in den Einstellungen.
     <string name="delete_download">Download löschen</string>
     <string name="time_left">noch %s</string>
     <string name="new_empty">Alles gehört.\nNeue Episoden der letzten 30 Tage erscheinen hier.</string>
-    <string name="queue_empty">Die Warteschlange ist leer.\nFüge Episoden mit „Als Nächstes abspielen“ oder „Zur Warteschlange“ hinzu.</string>
+    <string name="queue_empty">Die Warteschlange ist leer.\nFüge Episoden mit „Als Nächstes abspielen“ oder „Zur Warteschlange hinzufügen“ hinzu.</string>
     <string name="downloads_empty">Keine heruntergeladenen Episoden.</string>
     <string name="removed_from_queue">Aus der Warteschlange entfernt</string>
     <string name="undo">Rückgängig</string>
@@ -93,9 +91,6 @@ Finde Podcasts über das + oben oder importiere deine Abos in den Einstellungen.
     <string name="mark_played_near_end_summary">Pausierst du oder wechselst zu einer anderen Episode und es ist nur noch so viel übrig, gilt die Episode als gehört.</string>
     <string name="mark_played_at_end">Erst ganz am Ende</string>
     <string name="remaining">noch %s</string>
-    <string name="queue_add_position">Zur Warteschlange hinzufügen</string>
-    <string name="queue_add_top">Oben</string>
-    <string name="queue_add_bottom">Unten</string>
     <string name="continue_with_queue">Mit Warteschlange fortfahren</string>
     <string name="continue_with_queue_summary">Nach dem Ende einer Episode die nächste aus der Warteschlange abspielen</string>
     <string name="sleep_duration">Dauer</string>

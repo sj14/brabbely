@@ -15,9 +15,6 @@ import kotlinx.coroutines.flow.map
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
-/** Where "Add to queue" puts an episode. */
-enum class QueueAddPosition { TOP, BOTTOM }
-
 /** When the sleep timer starts by itself as soon as playback starts. */
 enum class SleepAutoMode { OFF, ALWAYS, TIME_WINDOW }
 
@@ -37,7 +34,6 @@ data class AppSettings(
     val continueWithQueue: Boolean = true,
     /** An episode paused or left with at most this much remaining counts as played, 0 to turn off. */
     val markPlayedRemainingSeconds: Int = 30,
-    val queueAddPosition: QueueAddPosition = QueueAddPosition.BOTTOM,
     val pauseOnZeroVolume: Boolean = true,
     val autoDownload: Boolean = false,
     val wifiOnly: Boolean = true,
@@ -91,7 +87,6 @@ class SettingsRepository(context: Context) {
         val skipSilence = booleanPreferencesKey("skip_silence")
         val continueWithQueue = booleanPreferencesKey("continue_with_queue")
         val markPlayedRemaining = intPreferencesKey("mark_played_remaining")
-        val queueAddPosition = stringPreferencesKey("queue_add_position")
         val pauseOnZeroVolume = booleanPreferencesKey("pause_on_zero_volume")
         val sleepVolumeReset = booleanPreferencesKey("sleep_volume_reset")
         val sleepPauseWhileUnlocked = booleanPreferencesKey("sleep_pause_while_unlocked")
@@ -122,8 +117,6 @@ class SettingsRepository(context: Context) {
             skipSilence = prefs.read(Keys.skipSilence) ?: defaults.skipSilence,
             continueWithQueue = prefs.read(Keys.continueWithQueue) ?: defaults.continueWithQueue,
             markPlayedRemainingSeconds = prefs.read(Keys.markPlayedRemaining) ?: defaults.markPlayedRemainingSeconds,
-            queueAddPosition = enumOrNull<QueueAddPosition>(prefs.read(Keys.queueAddPosition))
-                ?: defaults.queueAddPosition,
             pauseOnZeroVolume = prefs.read(Keys.pauseOnZeroVolume) ?: defaults.pauseOnZeroVolume,
             sleepVolumeReset = prefs.read(Keys.sleepVolumeReset) ?: defaults.sleepVolumeReset,
             sleepPauseWhileUnlocked = prefs.read(Keys.sleepPauseWhileUnlocked) ?: defaults.sleepPauseWhileUnlocked,
@@ -177,8 +170,6 @@ class SettingsRepository(context: Context) {
     suspend fun setSleepVolumeReset(enabled: Boolean) = store.edit { it[Keys.sleepVolumeReset] = enabled }
     suspend fun setSleepPauseWhileUnlocked(enabled: Boolean) =
         store.edit { it[Keys.sleepPauseWhileUnlocked] = enabled }
-    suspend fun setQueueAddPosition(position: QueueAddPosition) =
-        store.edit { it[Keys.queueAddPosition] = position.name }
     suspend fun setMarkPlayedRemaining(seconds: Int) = store.edit { it[Keys.markPlayedRemaining] = seconds }
     suspend fun setContinueWithQueue(enabled: Boolean) = store.edit { it[Keys.continueWithQueue] = enabled }
     suspend fun setAutoDownload(enabled: Boolean) = store.edit { it[Keys.autoDownload] = enabled }

@@ -174,25 +174,30 @@ class PodcastRepository(
     }
 
     /** Adds the episode at the top or bottom of the queue, as chosen in the settings. */
+    /** Puts an episode at the end of the queue. */
     suspend fun enqueue(episodeId: Long) {
-        when (settings.current().queueAddPosition) {
-            QueueAddPosition.TOP -> playNext(episodeId)
-            QueueAddPosition.BOTTOM -> {
-                val last = episodeDao.maxQueuePosition() ?: 0
-                episodeDao.setQueuePosition(episodeId, last + 1)
-            }
-        }
+        val last = episodeDao.maxQueuePosition() ?: 0
+        episodeDao.setQueuePosition(episodeId, last + 1)
     }
 
     /** Puts a playing episode at the top of the queue, unless it is already queued. */
     suspend fun ensureQueued(episodeId: Long) {
         val episode = episodeDao.get(episodeId) ?: return
-        if (episode.queuePosition == null) playNext(episodeId)
-    }
-
-    suspend fun playNext(episodeId: Long) {
+        if (episode.queuePosition != null) return
         val first = episodeDao.minQueuePosition() ?: 0
         episodeDao.setQueuePosition(episodeId, first - 1)
+    }
+
+    /**
+     * Puts an episode right after the playing one, which is where playback continues when that one
+     * ends. Without a playing episode in the queue, it goes to the top.
+     */
+    suspend fun playNext(episodeId: Long, playingEpisodeId: Long?) = db.withTransaction {
+        val queue = episodeDao.getQueue().map { it.id }.filter { it != episodeId }.toMutableList()
+        // indexOf gives -1 if the playing episode is not queued, so the episode goes to the top.
+        val afterPlaying = if (playingEpisodeId == null) 0 else queue.indexOf(playingEpisodeId) + 1
+        queue.add(afterPlaying, episodeId)
+        reorderQueue(queue)
     }
 
     suspend fun removeFromQueue(episodeId: Long) = episodeDao.setQueuePosition(episodeId, null)

@@ -47,7 +47,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.sj14.brabbely.BuildConfig
 import io.github.sj14.brabbely.LOG_TAG
 import io.github.sj14.brabbely.R
-import io.github.sj14.brabbely.data.QueueAddPosition
 import io.github.sj14.brabbely.data.backup.BackupFormat
 import io.github.sj14.brabbely.data.backup.BackupRepository
 import io.github.sj14.brabbely.data.backup.ImportFailedNotification
@@ -194,18 +193,6 @@ fun SettingsScreen(onBack: () -> Unit, onOpenDownloads: () -> Unit) {
                 selected = settings.markPlayedRemainingSeconds,
                 label = { remainingLabel(it) },
                 onSelect = { update { repo.setMarkPlayedRemaining(it) } },
-            )
-            ChoiceSetting(
-                title = stringResource(R.string.queue_add_position),
-                options = QueueAddPosition.entries,
-                selected = settings.queueAddPosition,
-                label = {
-                    when (it) {
-                        QueueAddPosition.TOP -> stringResource(R.string.queue_add_top)
-                        QueueAddPosition.BOTTOM -> stringResource(R.string.queue_add_bottom)
-                    }
-                },
-                onSelect = { update { repo.setQueueAddPosition(it) } },
             )
             SwitchSetting(
                 title = stringResource(R.string.continue_with_queue),

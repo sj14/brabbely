@@ -79,7 +79,7 @@ private data class Tab(val route: String, val label: Int, val icon: ImageVector)
 private val tabs = listOf(
     Tab(Routes.LIBRARY, R.string.library, Icons.Rounded.GridView),
     Tab(Routes.NEW, R.string.new_episodes, Icons.Rounded.NewReleases),
-    Tab(Routes.QUEUE, R.string.tab_queue, Icons.AutoMirrored.Rounded.PlaylistPlay),
+    Tab(Routes.QUEUE, R.string.queue, Icons.AutoMirrored.Rounded.PlaylistPlay),
 )
 
 @Composable
